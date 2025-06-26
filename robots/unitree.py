@@ -319,9 +319,9 @@ G129_CFG_WITH_DEX1_BASE_FIX = ArticulationCfg(
             ],
             effort_limit=None,  # increase the torque limit
             velocity_limit=None,  # set the velocity limit to 0
-            stiffness=400.0,    # increase the stiffness (kp)
-            damping=8.0,        # increase the damping (kd)
-            friction=0.0,
+            stiffness=800.0,    # increase the stiffness (kp)
+            damping=3.0,        # increase the damping (kd)
+            friction=200.0,
             armature=None,
         ),
 

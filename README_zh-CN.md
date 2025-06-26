@@ -9,6 +9,7 @@
 ## 重要事情提前说
 - 请使用[官方推荐](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html)的硬件资源进行部署使用
 - 仿真器在第一次启动的时候由于其自身需要加载资源可能会等待一段时间，具体等待时间与硬件性能以及网络环境有关
+- 仿真器运行起来以后会发送/接收和真实机器人一样的DDS话题(如果同一网路中有真实机器人运行请注意区分)，DDS的使用具体可参考[G1控制](https://github.com/unitreerobotics/unitree_sdk2_python/tree/master/example/g1)、[Dex3灵巧手控制](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/g1/dex3/g1_dex3_example.cpp)
 - 虚拟场景启动以后请点击 PerspectiveCamera -> Cameras -> PerspectiveCamera 查看主视图的场景。操作步骤如下图所示:
 <table align="center">
     <tr>
@@ -54,24 +55,39 @@
       <code>Isaac-PickPlace-RedBlock-G129-Dex3-Joint</code>
     </td>
   </tr>
+  <tr>
+    <td align="center">
+      <img src="./img/stack_rgyblock_g129_dex1.png" width="300" alt="G1-gripper-redblock"/>
+      <br/>
+      <code>Isaac-Stack-RgyBlock-G129-Dex1-Joint</code>
+    </td>
+    <td align="center">
+      <img src="./img/stack_rgyblock_g129_dex3.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-Stack-RgyBlock-G129-Dex3-Joint</code>
+    </td>
+  </tr>
 </table>
 
 ## 2、⚙️ 环境配置与运行
-该项目需要安装Isaac Sim 4.5.0以及Isaac Lab，具体安装可参考[官方教程](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html).或者按照下面流程进行安装。
+该项目需要安装Isaac Sim 4.5.0以及Isaac Lab，具体安装可参考[官方教程](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html).或者按照下面流程进行安装。Ubuntu 20.4与Ubuntu 22.4以及以上版本安装方式不同，请根据自己的系统版本进行安装。
 
-### 2.1 创建虚拟环境
+### 2.1 Ubuntu 22.04 以及以上的安装
+
+-  创建虚拟环境
 
 ```
 conda create -n unitree_sim_env python=3.10
 conda activate unitree_sim_env
 ```
-### 2.2 安装Pytorch
+- 安装Pytorch
+
 这个需要根据自己的CUDA版本进行安装，具体参考[Pytorch官方教程](https://pytorch.org/get-started/locally/),下面以CUDA 12为例进行安装
 
 ```
 pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
 ```
-### 2.3 安装 Isaac Sim 4.5.0
+- 2.1.3 安装 Isaac Sim 4.5.0
 
 ```
 pip install --upgrade pip
@@ -85,7 +101,10 @@ isaacsim
 ```
 第一次执行会有:Do you accept the EULA? (Yes/No):  Yes
 
-### 2.4 安装Isaac Lab
+
+
+- 安装Isaac Lab
+
 目前使用的IsaacLab 的版本号是91ad4944f2b7fad29d52c04a5264a082bcaad71d
 
 ```
@@ -106,7 +125,7 @@ or
 ./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py
 ```
 
-### 2.5 安装unitree_sdk2_python
+- 安装unitree_sdk2_python
 
 ```
 git clone https://github.com/unitreerobotics/unitree_sdk2_python
@@ -115,12 +134,83 @@ cd unitree_sdk2_python
 
 pip3 install -e .
 ```
-### 2.6 安装zmq
+- 安装zmq
 ```
 pip install pyzmq
 ```
 
-### 2.7 运行程序
+### 2.2 Ubuntu 20.4安装
+
+- 下载二进制的Isaaac Sim
+
+下载对应版本的
+[二进制Isaac Sim 4.5.0](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/installation/download.html)并解压；
+
+假设isaac sim放在`/home/unitree/tools/isaac-sim`,请按照下面的步骤进行安装；
+
+- 设在环境变量
+
+```
+export ISAACSIM_PATH="${HOME}/tools/isaac-sim"
+
+export ISAACSIM_PYTHON_EXE="${ISAACSIM_PATH}/python.sh"
+
+```
+测试设置是否成功
+
+```
+${ISAACSIM_PATH}/isaac-sim.sh
+
+或
+
+${ISAACSIM_PYTHON_EXE} -c "print('Isaac Sim configuration is now complete.')" 
+
+需要退出包括base在内的所有的conda环境
+
+```
+
+**注意：** 可以把上面命令写到bashrc文件中
+
+- 安装 Isaac Lab
+
+目前使用的IsaacLab 的版本号是91ad4944f2b7fad29d52c04a5264a082bcaad71d
+
+```
+git clone git@github.com:isaac-sim/IsaacLab.git
+
+sudo apt install cmake build-essential
+
+cd IsaacLab
+
+ln -s ${HOME}/tools/isaac-sim/ _isaac_sim     (请根据自己路径填写)
+
+./isaaclab.sh --conda unitree_sim_env
+
+conda activate  unitree_sim_env
+
+./isaaclab.sh --install
+
+```
+
+- 安装 unitree_sdk2_python
+
+```
+git clone https://github.com/unitreerobotics/unitree_sdk2_python
+
+cd unitree_sdk2_python
+
+pip3 install -e .
+
+```
+
+- 安装zmq
+
+```
+pip install pyzmq
+
+```
+
+### 2.3 运行程序
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_gripper_dds --robot_type g129

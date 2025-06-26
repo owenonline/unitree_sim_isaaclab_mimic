@@ -9,6 +9,7 @@ from isaaclab.assets import  AssetBaseCfg, RigidObjectCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
 from isaaclab.utils import configclass
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from tasks.common_config import   CameraBaseCfg  # isort: skip
 @configclass
 class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive scene configuration class
@@ -35,7 +36,7 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
                                                 rot=[1.0, 0.0, 0.0, 0.0]), # initial rotation [x, y, z, w]
         spawn=UsdFileCfg(
             usd_path=f"usd/objects/table_with_yellowbox.usd",    # table model file
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),    # set to kinematic object
+            # rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),    # set to kinematic object
         ),
     )
     # Object
@@ -70,6 +71,7 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
             ),
         ),
     )
+
 
     # Ground plane
     # 3. ground configuration

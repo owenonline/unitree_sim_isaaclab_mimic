@@ -9,6 +9,7 @@
 ## Important Notes First
 - Please use the [officially recommended](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html) hardware resources for deployment
 - The simulator may take some time to load resources during its first startup, and the waiting time depends on hardware performance and network environment
+- After the simulator starts running, it will send/receive the same DDS topics as the real robot (Please note to distinguish between the simulator and real robot if there is a real robot running on the same network). For specific DDS usage, please refer to[G1 Control](https://github.com/unitreerobotics/unitree_sdk2_python/tree/master/example/g1) and [Dex3 Dexterous Hand Control](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/g1/dex3/g1_dex3_example.cpp)
 - After the virtual scene starts up, please click PerspectiveCamera -> Cameras -> PerspectiveCamera to view the main view scene. The operation steps are shown below:
 <table align="center">
     <tr>
@@ -54,24 +55,41 @@ Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unit
       <code>Isaac-PickPlace-RedBlock-G129-Dex3-Joint</code>
     </td>
   </tr>
+  <tr>
+    <td align="center">
+      <img src="./img/stack_rgyblock_g129_dex1.png" width="300" alt="G1-gripper-redblock"/>
+      <br/>
+      <code>Isaac-Stack-RgyBlock-G129-Dex1-Joint</code>
+    </td>
+    <td align="center">
+      <img src="./img/stack_rgyblock_g129_dex3.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-Stack-RgyBlock-G129-Dex3-Joint</code>
+    </td>
+  </tr>
 </table>
 
 ## 2、⚙️ Environment Setup and Running
-This project requires installing Isaac Sim 4.5.0 and Isaac Lab. For specific installation, please refer to the [official tutorial](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html) or follow the process below.
+This project requires installing Isaac Sim 4.5.0 and Isaac Lab. For specific installation, please refer to the  or follow the process below.
 
-### 2.1 Create Virtual Environment
+This project requires Isaac Sim 4.5.0 and Isaac Lab. You can refer to the [official installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html)  or follow the steps below. The installation steps differ between Ubuntu 20.04 and Ubuntu 22.04 or later, so please follow the appropriate instructions based on your system version.
+
+### 2.1 Installation on Ubuntu 22.04 and Later
+
+- **Create Virtual Environment**
 
 ```
 conda create -n unitree_sim_env python=3.10
 conda activate unitree_sim_env
 ```
-### 2.2 Install Pytorch
-This needs to be installed according to your CUDA version. Please refer to the [Pytorch official tutorial](https://pytorch.org/get-started/locally/). The following example uses CUDA 12:
+- **Install Pytorch**
+
+This needs to be installed according to your CUDA version. Please refer to the [official PyTorch installation guide](https://pytorch.org/get-started/locally/). The following example uses CUDA 12:
 
 ```
 pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
 ```
-### 2.3 Install Isaac Sim 4.5.0
+- **Install Isaac Sim 4.5.0**
 
 ```
 pip install --upgrade pip
@@ -84,7 +102,8 @@ isaacsim
 ```
 First execution will show: Do you accept the EULA? (Yes/No):  Yes
 
-### 2.4 Install Isaac Lab
+-  **Install Isaac Lab**
+
 The current IsaacLab version used is 91ad4944f2b7fad29d52c04a5264a082bcaad71d
 
 ```
@@ -105,7 +124,7 @@ or
 ./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py
 ```
 
-### 2.5 Install unitree_sdk2_python
+- **Install unitree_sdk2_python**
 
 ```
 git clone https://github.com/unitreerobotics/unitree_sdk2_python
@@ -114,12 +133,76 @@ cd unitree_sdk2_python
 
 pip3 install -e .
 ```
-### 2.6 Install zmq
+
+- **Install zmq**
 ```
 pip install pyzmq
 ```
 
-### 2.7 Run Program
+### 2.2 Installation on Ubuntu 20.04
+
+- **Download Isaac Sim Binary**
+
+Download the [Isaac Sim 4.5.0 binary](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/installation/download.html) and extract it.
+
+Assume the path to Isaac Sim is ``/home/unitree/tools/isaac-sim``. Follow the steps below:
+
+- **Set environment variables**
+
+Please replace with your own path
+
+```
+export ISAACSIM_PATH="${HOME}/tools/isaac-sim"            
+export ISAACSIM_PYTHON_EXE="${ISAACSIM_PATH}/python.sh"  
+```
+Verify the setup:
+```
+${ISAACSIM_PATH}/isaac-sim.sh
+# or
+${ISAACSIM_PYTHON_EXE} -c "print('Isaac Sim configuration is now complete.')"
+
+Note: All conda environments (including base) must be deactivated before running this.
+```
+**Note:** You can add the above commands to your ~/.bashrc file for convenience.
+
+- Install Isaac Lab
+
+Using IsaacLab commit `91ad4944f2b7fad29d52c04a5264a082bcaad71d`
+
+```
+git clone git@github.com:isaac-sim/IsaacLab.git
+
+sudo apt install cmake build-essential
+
+cd IsaacLab
+
+ln -s ${HOME}/tools/isaac-sim/ _isaac_sim     (Please replace with your own path)
+
+./isaaclab.sh --conda unitree_sim_env
+
+conda activate unitree_sim_env
+
+./isaaclab.sh --install
+
+```
+
+- Install unitree_sdk2_python
+
+```
+git clone https://github.com/unitreerobotics/unitree_sdk2_python
+
+cd unitree_sdk2_python
+
+pip3 install -e .
+
+```
+
+- Install zmq
+
+```
+pip install pyzmq
+```
+### 2.3 Run Program
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_gripper_dds --robot_type g129

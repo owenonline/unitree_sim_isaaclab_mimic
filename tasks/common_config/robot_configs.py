@@ -24,19 +24,19 @@ class G1RobotJointTemplates:
         """get the default position of the leg joints"""
         return {
             # left leg joint - locked in standing position
-            "left_hip_pitch_joint": -0.28,
+            "left_hip_pitch_joint": 0.0,
             "left_hip_roll_joint": 0.0,
             "left_hip_yaw_joint": 0.0,
-            "left_knee_joint": 0.63,
-            "left_ankle_pitch_joint": -0.35,
+            "left_knee_joint": 0.0,
+            "left_ankle_pitch_joint": 0.0,
             "left_ankle_roll_joint": 0.0,
             
             # right leg joint - locked in standing position
-            "right_hip_pitch_joint": -0.28,
+            "right_hip_pitch_joint": 0.0,
             "right_hip_roll_joint": 0.0,
             "right_hip_yaw_joint": 0.0,
-            "right_knee_joint": 0.63,
-            "right_ankle_pitch_joint": -0.35,
+            "right_knee_joint": 0.0,
+            "right_ankle_pitch_joint": 0.0,
             "right_ankle_roll_joint": 0.0,
         }
     
@@ -211,7 +211,7 @@ class G1RobotPresets:
     # === pick-place task preset ===
     
     @classmethod
-    def g1_29dof_dex1_base_fix(cls,init_pos: Tuple[float, float, float] = (-0.15, 0.0, 0.744),
+    def g1_29dof_dex1_base_fix(cls,init_pos: Tuple[float, float, float] = (-0.15, 0.0, 0.76),
         init_rot: Tuple[float, float, float, float] = (0.7071, 0, 0, 0.7071)) -> ArticulationCfg:
         """pick-place task configuration - simple gripper"""
         return G129dofRobotBaseCfg.get_base_config(
@@ -222,7 +222,7 @@ class G1RobotPresets:
         )
     
     @classmethod
-    def g1_29dof_dex3_base_fix(cls,init_pos: Tuple[float, float, float] = (-0.15, 0.0, 0.744),
+    def g1_29dof_dex3_base_fix(cls,init_pos: Tuple[float, float, float] = (-0.15, 0.0, 0.76),
         init_rot: Tuple[float, float, float, float] = (0.7071, 0, 0, 0.7071)) -> ArticulationCfg:
         """pick-place task configuration - dex3 hand"""
         return G129dofRobotBaseCfg.get_base_config(

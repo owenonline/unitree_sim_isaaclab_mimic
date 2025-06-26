@@ -38,7 +38,7 @@ class ObjectTableSceneCfg(TableRedBlockSceneCfg):
     
     # Humanoid robot w/ arms higher
     # 5. humanoid robot configuration 
-    robot: ArticulationCfg = G1RobotPresets.g1_29dof_dex1_base_fix(init_pos=(-4.2, -3.7, 0.744),
+    robot: ArticulationCfg = G1RobotPresets.g1_29dof_dex1_base_fix(init_pos=(-4.2, -3.7, 0.76),
         init_rot=(0.7071, 0, 0, -0.7071))
 
 
