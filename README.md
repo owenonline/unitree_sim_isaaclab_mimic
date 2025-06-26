@@ -70,7 +70,6 @@ Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unit
 </table>
 
 ## 2、⚙️ Environment Setup and Running
-This project requires installing Isaac Sim 4.5.0 and Isaac Lab. For specific installation, please refer to the  or follow the process below.
 
 This project requires Isaac Sim 4.5.0 and Isaac Lab. You can refer to the [official installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html)  or follow the steps below. The installation steps differ between Ubuntu 20.04 and Ubuntu 22.04 or later, so please follow the appropriate instructions based on your system version.
 
