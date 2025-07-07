@@ -11,6 +11,8 @@ from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdF
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from tasks.common_config import   CameraBaseCfg  # isort: skip
+import os
+project_root = os.environ.get("PROJECT_ROOT")
 @configclass
 class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive scene configuration class
     """object table scene configuration class

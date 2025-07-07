@@ -212,12 +212,12 @@ class EpisodeWriter():
         Stop the worker thread and ensure all tasks are completed.
         停止后台线程并确保所有任务完成
         """
-        print("==> EpisodeWriter 开始关闭... - Starting EpisodeWriter shutdown...")
+        print("==>  Starting EpisodeWriter shutdown...")
         
         # 如果还有未保存的数据，先保存
         # If there is still unsaved data, save it first
         if not self.is_available:  # If self.is_available is False, it means there is still data not saved.
-            print("==> 保存未完成的episode... - Saving unfinished episode...")
+            print("==>  Saving unfinished episode...")
             self.save_episode()
             # 等待保存完成
             # Wait for save to complete
@@ -226,7 +226,7 @@ class EpisodeWriter():
         
         # 停止工作线程
         # Stop worker thread
-        print("==> 停止工作线程... - Stopping worker thread...")
+        print("==> Stopping worker thread...")
         self.stop_worker = True
         
         # 等待队列处理完成
@@ -234,14 +234,14 @@ class EpisodeWriter():
         try:
             self.item_data_queue.join()
         except Exception as e:
-            print(f"==> 等待队列完成时出错 - Error waiting for queue completion: {e}")
+            print(f"==>  Error waiting for queue completion: {e}")
         
         # 等待工作线程结束
         # Wait for worker thread to finish
         if self.worker_thread and self.worker_thread.is_alive():
-            print("==> 等待工作线程结束... - Waiting for worker thread to finish...")
+            print("==>  Waiting for worker thread to finish...")
             self.worker_thread.join(timeout=5.0)  # 5秒超时
             if self.worker_thread.is_alive():
-                print("==> 警告：工作线程未在超时时间内结束 - Warning: Worker thread did not finish within timeout")
+                print("==>  Warning: Worker thread did not finish within timeout")
         
-        print("==> EpisodeWriter 关闭完成 - EpisodeWriter shutdown completed")
+        print("==> EpisodeWriter shutdown completed")

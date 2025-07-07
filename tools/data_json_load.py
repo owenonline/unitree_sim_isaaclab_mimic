@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import torch
+import re
 from pathlib import Path
 def convert_nested_lists_to_tensor(obj):
     """
@@ -177,6 +178,13 @@ def get_data_json_list(file_path):
     elif file_path.is_dir():
         data_json_list = get_file_path(file_path)
 
+    # 按照episode_后面的数字排序
+    def extract_episode_number(path):
+        match = re.search(r'episode_(\d+)', str(path))
+        return int(match.group(1)) if match else float('inf')
+    
+    data_json_list.sort(key=extract_episode_number)
+    
     print(f"data_json_list: {data_json_list}")
     return data_json_list
 

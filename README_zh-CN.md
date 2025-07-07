@@ -22,7 +22,7 @@
 </table>
 
 ## 1、 📖 介绍
-该项目基于Isaac Lab 搭建**宇树(Unitree)机器人**在不同任务下的仿真场景，方便进行数据采集和模型验证。可以与[avp_teleoperate](https://github.com/unitreerobotics/avp_teleoperate)代码配合进行数据集的采集。该项目采用了与真实机器人一样的DDS通信，以提高代码的通用性和使用的简易性。
+该项目基于Isaac Lab 搭建**宇树(Unitree)机器人**在不同任务下的仿真场景，方便进行数据采集、数据回放、数据生成以及模型验证。可以与[avp_teleoperate](https://github.com/unitreerobotics/avp_teleoperate)代码配合进行数据集的采集。该项目采用了与真实机器人一样的DDS通信，以提高代码的通用性和使用的简易性。
 
 目前该项目使用带有夹爪的Unitree G1(G1-29dof-gripper)以及带有三指灵巧手的Unitree G1(G1-29dof-dex3)搭建了不同任务的仿真场景，具体任务场景名称与图示如下表：
 
@@ -134,9 +134,9 @@ cd unitree_sdk2_python
 
 pip3 install -e .
 ```
-- 安装zmq
+- 安装其他依赖
 ```
-pip install pyzmq
+pip install -r requirements.txt
 ```
 
 ### 2.2 Ubuntu 20.4安装
@@ -203,14 +203,16 @@ pip3 install -e .
 
 ```
 
-- 安装zmq
+- 安装其他的依赖
 
 ```
-pip install pyzmq
+pip install -r requirements.txt
 
 ```
 
 ### 2.3 运行程序
+
+#### 2.3.1 遥操作
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_gripper_dds --robot_type g129
@@ -219,6 +221,32 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 - --task: 任务名称，对应上表中的任务名称
 - --enable_gripper_dds/--enable_dex3_dds: 分别代表启用二指夹爪/三指灵巧手的dds
 - --robot_type: 机器人类型，目前有29自由度的unitree g1(g129)
+
+#### 2.3.2 数据回放
+
+```
+python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/avp_teleoperate/teleop/utils/data" 
+```
+- --replay: 用于判断是否进行数据回放
+- --file_path: 数据集存放的目录(请修改自己的数据集路径)。
+
+**注意：** ；这里使用的数据集存放格式是与[avp_teleoperate](https://github.com/unitreerobotics/avp_teleoperate)遥操作录制的数据集格式一致。
+
+#### 2.3.3 数据生成
+通过在数据回放过程中调整光照条件和相机参数，并重新采集图像数据，可用于生成具有多样化视觉特征的增强数据，从而提升模型的泛化能力。
+
+```
+ python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/avp_teleoperate/teleop/utils/data" --generate_data --generate_data_dir "./data2"
+```
+- --generate_data: 是否生成新的数据
+- --generate_data_dir: 新数据存放的路径
+- --rerun_log: 是否开启数据录制日志
+- --modify_light: 是否修改光照条件(这个需要自己根据需求修改main函数中update_light的参数)
+- --modify_camera: 是否修改相机参数(这个需要自己根据需求修改main函数中batch_augment_cameras_by_name参数)
+
+**注意:** 如需要修改光照条件或者相机参数，请修改需要的参数并且测试后再进行大量生成。
+
+
 
 ## 3、任务场景搭建
 

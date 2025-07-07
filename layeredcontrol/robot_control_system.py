@@ -119,7 +119,8 @@ class RobotController:
         # 2. direct environment step
         env_start = perf_counter()
         if self.config.replay_mode:
-            self.env.sim.render()
+            pass
+            # self.env.sim.render()
         else:
             self.env.step(action)
         env_time = perf_counter() - env_start

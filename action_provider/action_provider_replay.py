@@ -149,74 +149,6 @@ class FileActionProviderReplay(ActionProvider):
         self.left_hand_joint_indices = [self.joint_to_index[name] for name in self.left_hand_joint]
         self.right_hand_joint_indices = [self.joint_to_index[name] for name in self.right_hand_joint]
         self.all_joint_indices = self.left_arm_joint_indices + self.right_arm_joint_indices #+ self.left_hand_joint_indices + self.right_hand_joint_indices
-    def compare_states(self,state_from_dataset,runtime_state,runtime_env_index,diff_threshold_robot=0.001,diff_threshold_object=0.001,compare_joint_indices: Optional[List[int]] = None
-    ) -> (bool, str):
-        """Compare states from dataset and runtime.
-
-        Args:
-            state_from_dataset: 数据集中的状态
-            runtime_state: 运行时状态
-            runtime_env_index: 要比较的环境索引
-            compare_joint_indices: 可选，指定要比较的 ["articulation"]["robot"]["joint_position"] 的索引列表
-
-        Returns:
-            bool: 状态是否匹配
-            str: 不匹配时的日志信息
-        """
-        states_matched = True
-        output_log = ""
-
-        for asset_type in ["articulation", "rigid_object"]:
-            for asset_name in runtime_state[asset_type].keys():
-                          # 仅针对 rigid_object 类型：如果物体未静止，则跳过整个物体
-                if asset_type == "rigid_object":
-                    root_velocity = runtime_state[asset_type][asset_name].get("root_velocity", None)
-                    if root_velocity is not None:
-                        if root_velocity.ndim == 2:
-                            velocity = root_velocity[runtime_env_index]
-                        else:
-                            velocity = root_velocity
-                        # 如果不为全 0，跳过该刚体的所有状态比较
-                        if not torch.allclose(velocity, torch.zeros_like(velocity), atol=1e-5):
-                            continue
-                for state_name in runtime_state[asset_type][asset_name].keys():
-                    runtime_asset_state = runtime_state[asset_type][asset_name][state_name]
-                    dataset_asset_state = state_from_dataset[asset_type][asset_name][state_name]
-
-                    # 若是 batched 环境，则索引出目标环境
-                    if runtime_asset_state.ndim == 2:
-                        runtime_asset_state = runtime_asset_state[runtime_env_index]
-                    if dataset_asset_state.ndim == 2:
-                        dataset_asset_state = dataset_asset_state[runtime_env_index]
-
-                    if runtime_asset_state.shape != dataset_asset_state.shape:
-                        raise ValueError(f"State shape of {state_name} for asset {asset_name} don't match")
-
-                    # 判断是否为 joint_position 并且需要索引比较
-                    if (
-                        asset_type == "articulation"
-                        and asset_name == "robot"
-                        and state_name == "joint_position"
-                        and compare_joint_indices is not None
-                    ):
-                        indices_to_compare = compare_joint_indices
-                    else:
-                        indices_to_compare = range(len(dataset_asset_state))
-
-                    for i in indices_to_compare:
-                        if asset_name == "robot":
-                            if "velocity" not in state_name and abs(dataset_asset_state[i] - runtime_asset_state[i]) > diff_threshold_robot:
-                                states_matched = False
-                                output_log += f'\tState ["{asset_type}"]["{asset_name}"]["{state_name}"][{i}] don\'t match\r\n'
-                                output_log += f"\t  Dataset:\t{dataset_asset_state[i]}\r\n"
-                                output_log += f"\t  Runtime: \t{runtime_asset_state[i]}\r\n"
-                        else:
-                            if "velocity" not in state_name and abs(dataset_asset_state[i] - runtime_asset_state[i]) > diff_threshold_object:
-                                states_matched = False
-                                output_log += f'\tState ["{asset_type}"]["{asset_name}"]["{state_name}"][{i}] don\'t match\r\n'
-                                output_log += f"\t  Dataset:\t{dataset_asset_state[i]}\r\n"
-                                output_log += f"\t  Runtime: \t{runtime_asset_state[i]}\r\n"
-        return states_matched, output_log
 
 
     def get_action(self, env) -> Optional[torch.Tensor]:
@@ -226,37 +158,24 @@ class FileActionProviderReplay(ActionProvider):
             if self.action_index < self.total_step_num:
                 if self.enable_robot == "g129":
                     arm_cmd_data = self.robot_action[self.action_index]
-                    # for joint_name, arm_idx in self.arm_joint_mapping.items():
-                    #     if joint_name in self.joint_to_index:
-                    #         full_action[self.joint_to_index[joint_name]] = arm_cmd_data[arm_idx]
-                
+     
                 # Get gripper command
                 if self.enable_gripper:
                     hand_cmd_data = self.hand_action[self.action_index]
-                    # for joint_name, gripper_idx in self.gripper_joint_mapping.items():
-                    #     if joint_name in self.joint_to_index:
-                    #         full_action[self.joint_to_index[joint_name]] = self._convert_to_joint_range(hand_cmd_data[gripper_idx])
 
-                
                 # Get hand command
                 if self.enable_dex3:
                     hand_cmd_data = self.hand_action[self.action_index]
-                    # for joint_name, hand_idx in self.left_hand_joint_mapping.items():
-                    #     if joint_name in self.joint_to_index:
-                    #         full_action[self.joint_to_index[joint_name]] = hand_cmd_data[hand_idx]
-                    # for joint_name, hand_idx in self.right_hand_joint_mapping.items():
-                    #     if joint_name in self.joint_to_index:
-                    #         full_action[self.joint_to_index[joint_name]] = hand_cmd_data[hand_idx]
-                # 使用简单可靠的reset_to方法
-                flag ,log = self.compare_states(self.sim_state_list[self.action_index],self.env.scene.get_state(),0,compare_joint_indices=self.all_joint_indices)
-                # if not flag:
-                    # print(f"[{self.name}] State mismatch: {log}")
-                env.reset_to(self.sim_state_list[self.action_index], torch.tensor([0], device=env.device), is_relative=True)
+                env.scene.reset_to(self.sim_state_list[self.action_index], torch.tensor([0], device=env.device), is_relative=True)
+                for sensor in env.scene.sensors.values():
+                    sensor.update(0.02, force_recompute=False)
+                # env.sim.forward()
+                env.sim.render()
+                env.observation_manager.compute()
                 
                 if self.generate_data:
                     self.save_date(env,arm_cmd_data,hand_cmd_data,self.sim_state_json_list[self.action_index])
                 
-                # 顺序播放每一帧，不跳帧
                 self.action_index += 1
             else:
                 self.action_index = 10**1000
@@ -317,14 +236,18 @@ class FileActionProviderReplay(ActionProvider):
         if self.recorder:
             self.recorder.close()
         self.is_running = False
-        print(f"[{self.name}] 资源清理完成 - Resource cleanup completed")
+        print(f"[{self.name}] Resource cleanup completed")
     def get_state(self,env):
 
         joint_pos = env.scene["robot"].data.joint_pos
         left_arm_joint_pose = joint_pos[:,self.left_arm_joint_indices][0].detach().cpu().numpy().tolist()
         right_arm_joint_pose = joint_pos[:,self.right_arm_joint_indices][0].detach().cpu().numpy().tolist()
-        left_hand_joint_pose = joint_pos[:,self.left_hand_joint_indices][0].detach().cpu().numpy().tolist()
-        right_hand_joint_pose = joint_pos[:,self.right_hand_joint_indices][0].detach().cpu().numpy().tolist()
+        if self.enable_gripper:
+            left_hand_joint_pose = np.array(self._convert_to_gripper_range(joint_pos[:,self.left_hand_joint_indices][0].detach().cpu().numpy())).tolist()
+            right_hand_joint_pose = np.array(self._convert_to_gripper_range(joint_pos[:,self.right_hand_joint_indices][0].detach().cpu().numpy())).tolist()
+        elif self.enable_dex3:
+            left_hand_joint_pose = joint_pos[:,self.left_hand_joint_indices][0].detach().cpu().numpy().tolist()
+            right_hand_joint_pose = joint_pos[:,self.right_hand_joint_indices][0].detach().cpu().numpy().tolist()
 
         return left_arm_joint_pose,right_arm_joint_pose,left_hand_joint_pose,right_hand_joint_pose
 
@@ -351,11 +274,11 @@ class FileActionProviderReplay(ActionProvider):
         left_arm_action = arm_action[:7].tolist()
         right_arm_action = arm_action[7:].tolist()
         if self.enable_gripper:
-            left_hand_action = np.array(hand_action[0]).tolist()
-            right_hand_action = np.array(hand_action[1]).tolist()
+            right_hand_action = hand_action[0].tolist() #self._convert_to_gripper_range(hand_action[0]).tolist()
+            left_hand_action = hand_action[1].tolist() #self._convert_to_gripper_range(hand_action[1]).tolist()
         elif self.enable_dex3:
-            left_hand_action = hand_action[:7].tolist()
-            right_hand_action = hand_action[7:].tolist()
+            right_hand_action = hand_action[:7].tolist()
+            left_hand_action = hand_action[7:].tolist()
         colors[f"color_{0}"] = images["head"]
         colors[f"color_{1}"] = images["left"]
         colors[f"color_{2}"] = images["right"]

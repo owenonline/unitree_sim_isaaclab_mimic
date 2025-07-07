@@ -11,6 +11,8 @@ from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdF
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from tasks.common_config import   CameraBaseCfg  # isort: skip
+import os
+project_root = os.environ.get("PROJECT_ROOT")
 @configclass
 class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive scene configuration class
     """object table scene configuration class
@@ -24,7 +26,7 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
             rot=[1.0, 0.0, 0.0, 0.0]
         ),
         spawn=UsdFileCfg(
-            usd_path=f"usd/objects/small_warehouse_digital_twin/room.usd",  # use simple room model
+            usd_path=f"{project_root}/assets/objects/small_warehouse_digital_twin/small_warehouse_digital_twin.usd",
         ),
     )
 
@@ -35,7 +37,7 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
         init_state=AssetBaseCfg.InitialStateCfg(pos=[-4.3,-4.2,-0.2],   # initial position [x, y, z]
                                                 rot=[1.0, 0.0, 0.0, 0.0]), # initial rotation [x, y, z, w]
         spawn=UsdFileCfg(
-            usd_path=f"usd/objects/table_with_yellowbox.usd",    # table model file
+            usd_path=f"{project_root}/assets/objects/table_with_yellowbox.usd",    # table model file
             # rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),    # set to kinematic object
         ),
     )

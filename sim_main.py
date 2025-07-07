@@ -2,6 +2,12 @@
 # Copyright (c) 2025, Unitree Robotics Co., Ltd. All Rights Reserved.
 # License: Apache License, Version 2.0  
 #!/usr/bin/env python3
+# main.py
+import os
+
+project_root = os.path.dirname(os.path.abspath(__file__))
+os.environ["PROJECT_ROOT"] = project_root
+
 import argparse
 import contextlib
 import time
@@ -22,7 +28,7 @@ parser.add_argument("--task", type=str, default="Isaac-PickPlace-G129-Head-Waist
 parser.add_argument("--action_source", type=str, default="dds", 
                    choices=["dds", "file", "trajectory", "policy", "replay"], 
                    help="Action source")
-parser.add_argument("--file_path", type=str, default="/home/unitree/Code/avp_teleoperate/teleop/utils/data", help="file path (when action_source=file)")
+parser.add_argument("--file_path", type=str, default="./data", help="file path (when action_source=file)")
 
 parser.add_argument("--robot_type", type=str, default="g129", help="robot type")
 parser.add_argument("--enable_gripper_dds", action="store_true", help="enable gripper DDS")
@@ -46,6 +52,12 @@ parser.add_argument("--profile_interval", type=int, default=500, help="performan
 # add AppLauncher parameters
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
+
+# 验证参数：enable_dex3_dds 和 enable_gripper_dds 不能同时启用
+if args_cli.enable_dex3_dds and args_cli.enable_gripper_dds:
+    print("Error: enable_dex3_dds and enable_gripper_dds cannot be enabled at the same time")
+    print("Please select one of the options")
+    sys.exit(1)
 
 
 import pinocchio 
@@ -85,7 +97,7 @@ def setup_signal_handlers(controller):
         try:
             controller.stop()
         except Exception as e:
-            print(f"停止controller失败: {e}")
+            print(f"Failed to stop controller: {e}")
 
     
     signal.signal(signal.SIGINT, signal_handler)
@@ -99,24 +111,24 @@ def main():
     try:
         os.setpgrp()
         current_pgid = os.getpgrp()
-        print(f"设置进程组: {current_pgid}")
+        print(f"Setting process group: {current_pgid}")
         
         def cleanup_process_group():
             try:
-                print(f"清理进程组: {current_pgid}")
+                print(f"Cleaning up process group: {current_pgid}")
                 import signal
                 os.killpg(current_pgid, signal.SIGTERM)
             except Exception as e:
-                print(f"清理进程组失败: {e}")
+                print(f"Failed to clean up process group: {e}")
         
         atexit.register(cleanup_process_group)
         
     except Exception as e:
-        print(f"设置进程组失败: {e}")
+        print(f"Failed to set process group: {e}")
     print("=" * 60)
     print("robot control system started")
-    print(f"任务: {args_cli.task}")
-    print(f"Action源: {args_cli.action_source}")
+    print(f"Task: {args_cli.task}")
+    print(f"Action source: {args_cli.action_source}")
     print("=" * 60)
 
     # parse environment configuration
@@ -334,39 +346,39 @@ if __name__ == "__main__":
     try:
         main()
     finally:
-        print("执行最终清理...")
+        print("Performing final cleanup...")
         
-        # 获取当前进程信息
+        # Get current process information
         import os
         import subprocess
         import signal
         import time
         
         current_pid = os.getpid()
-        print(f"当前主进程PID: {current_pid}")
+        print(f"Current main process PID: {current_pid}")
         
         try:
-            # 查找所有相关的Python进程
+            # Find all related Python processes
             result = subprocess.run(['pgrep', '-f', 'sim_main.py'], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 pids = result.stdout.strip().split('\n')
-                print(f"找到相关进程: {pids}")
+                print(f"Found related processes: {pids}")
                 
                 for pid in pids:
                     if pid and pid != str(current_pid):
                         try:
-                            print(f"终止子进程: {pid}")
+                            print(f"Terminating child process: {pid}")
                             os.kill(int(pid), signal.SIGTERM)
                         except ProcessLookupError:
-                            print(f"进程 {pid} 已经不存在")
+                            print(f"Process {pid} does not exist")
                         except Exception as e:
-                            print(f"无法终止进程 {pid}: {e}")
+                            print(f"Failed to terminate process {pid}: {e}")
                 
-                # 等待进程退出
+                # Wait for processes to exit
                 time.sleep(2)
                 
-                # 检查是否还有残留进程，强制杀死
+                # Check if there are any remaining processes, force kill them
                 result2 = subprocess.run(['pgrep', '-f', 'sim_main.py'], 
                                        capture_output=True, text=True)
                 if result2.returncode == 0:
@@ -374,22 +386,22 @@ if __name__ == "__main__":
                     for pid in remaining_pids:
                         if pid and pid != str(current_pid):
                             try:
-                                print(f"强制杀死进程: {pid}")
+                                print(f"Force killing process: {pid}")
                                 os.kill(int(pid), signal.SIGKILL)
                             except Exception as e:
-                                print(f"无法强制杀死进程 {pid}: {e}")
+                                print(f"Failed to force kill process {pid}: {e}")
                                 
         except Exception as e:
-            print(f"进程清理过程中出错: {e}")
+            print(f"Error during process cleanup: {e}")
         
         try:
             simulation_app.close()
         except Exception as e:
-            print(f"关闭仿真应用失败: {e}")
+            print(f"Failed to close simulation application: {e}")
             
-        print("程序退出完成")
+        print("Program exit completed")
         
-        # 最终强制退出
+        # Force exit
         os._exit(0)
 
 # python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_gripper_dds --robot_type g129
