@@ -117,7 +117,6 @@ class MultiImageWriter:
             image_bytes = concatenated_image.tobytes()
             data_view = memoryview(self.shm.buf)
             data_view[header_size:header_size + len(image_bytes)] = image_bytes
-            
             return True
             
         except Exception as e:

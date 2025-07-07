@@ -35,6 +35,7 @@ def get_camera_image(
     """
     # get the camera images
     images = {}
+    # env.sim.render()
     
     # Head camera (front camera)
     if "front_camera" in env.scene.keys():

@@ -15,6 +15,7 @@ from action_provider.action_base import ActionProvider
 class ControlConfig:
     """minimal control configuration"""
     step_hz: int = 500  # the frequency of the low-level execution
+    replay_mode: bool = False
 
 
 class RobotController:
@@ -117,7 +118,10 @@ class RobotController:
         
         # 2. direct environment step
         env_start = perf_counter()
-        self.env.step(action)
+        if self.config.replay_mode:
+            self.env.sim.render()
+        else:
+            self.env.step(action)
         env_time = perf_counter() - env_start
         
         self.step_count += 1

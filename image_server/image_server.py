@@ -12,19 +12,13 @@ from image_server.shared_memory_utils import MultiImageReader
 
 
 class ImageServer:
-    def __init__(self, config, port=5555, Unit_Test=False):
+    def __init__(self, fps=30, port=5555, Unit_Test=False):
         """
         Multi-image server - read multi-image data from shared memory and publish it
-        
-        config:
-        {
-            'fps': 30  # publish frequency
-        }
         """
         print("[Image Server] Initializing multi-image server from shared memory")
-        print(config)
         
-        self.fps = config.get('fps', 30)
+        self.fps = fps
         self.port = port
         self.Unit_Test = Unit_Test
         self.running = False
@@ -145,8 +139,7 @@ class ImageServer:
 
 if __name__ == "__main__":
     # use the send_process mode example
-    config = {'fps': 30}
-    server = ImageServer(config, Unit_Test=False)
+    server = ImageServer(fps=30, Unit_Test=False)
     
     # use the send_process method (blocking)
     server.send_process()

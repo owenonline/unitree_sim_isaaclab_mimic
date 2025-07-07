@@ -34,7 +34,7 @@ class DDSInitManager:
                 return True
             
             try:
-                ChannelFactoryInitialize(0)
+                ChannelFactoryInitialize(1)
                 self._initialized = True
                 print("[DDSInitManager] DDS factory initialized successfully")
                 return True
@@ -268,7 +268,14 @@ class BaseDDSNode(ABC):
                         # call callback function
                         if self.publish_callback:
                             self.publish_callback(data, msg)
-                
+                elif self.publisher:
+                    msg = self.process_publish_data("")
+                    if msg:
+                        self.publisher.Write(msg)
+                        
+                    # call callback function
+                    if self.publish_callback:
+                        self.publish_callback("", msg)
                 time.sleep(0.001)  # 1ms循环
                 
             except Exception as e:

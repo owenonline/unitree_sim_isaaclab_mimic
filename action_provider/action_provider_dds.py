@@ -7,12 +7,12 @@ import torch
 class DDSActionProvider(ActionProvider):
     """Action provider based on DDS"""
     
-    def __init__(self, robot_type="g129", enable_gripper=False, enable_dex3=False):
+    def __init__(self,env, robot_type="g129", enable_gripper=False, enable_dex3=False):
         super().__init__("DDSActionProvider")
         self.enable_robot = robot_type
         self.enable_gripper = enable_gripper
         self.enable_dex3 = enable_dex3
-        
+        self.env = env
         # Initialize DDS communication
         self.robot_dds = None
         self.gripper_dds = None
@@ -86,14 +86,14 @@ class DDSActionProvider(ActionProvider):
                 "right_hand_middle_1_joint":4,
                 "right_hand_index_0_joint":5,
                 "right_hand_index_1_joint":6}
-    
+        self.all_joint_names = self.env.scene["robot"].data.joint_names
+        self.joint_to_index = {name: i for i, name in enumerate(self.all_joint_names)}
+        
     def get_action(self, env) -> Optional[torch.Tensor]:
         """Get action from DDS"""
         try:
-            all_joint_names = env.scene["robot"].data.joint_names
-            joint_to_index = {name: i for i, name in enumerate(all_joint_names)}
-            full_action = torch.zeros(len(all_joint_names), device=env.device)
-            
+
+            full_action = torch.zeros(len(self.all_joint_names), device=self.env.device)
             # Get robot command
             if self.enable_robot == "g129" and self.robot_dds:
                 cmd_data = self.robot_dds.get_robot_command()
@@ -102,8 +102,8 @@ class DDSActionProvider(ActionProvider):
                     if len(positions) >= 29:
                         # arm_action = torch.tensor(positions[15:29], device=env.device, dtype=torch.float32)
                         for joint_name, arm_idx in self.arm_joint_mapping.items():
-                            if joint_name in joint_to_index:
-                                full_action[joint_to_index[joint_name]] = positions[arm_idx+15]
+                            if joint_name in self.joint_to_index:
+                                full_action[self.joint_to_index[joint_name]] = positions[arm_idx+15]
             
             # Get gripper command
             if self.gripper_dds:
@@ -113,11 +113,11 @@ class DDSActionProvider(ActionProvider):
                     # print(f"gripper_positions: {gripper_positions}")
                     if len(gripper_positions) >= 2:
                         for joint_name, gripper_idx in self.gripper_joint_mapping.items():
-                            if joint_name in joint_to_index:
+                            if joint_name in self.joint_to_index:
                                 # Convert gripper range
                                 gripper_value = gripper_positions[gripper_idx]
                                 # print(f"gripper_value: {gripper_value}")
-                                full_action[joint_to_index[joint_name]] = gripper_value
+                                full_action[self.joint_to_index[joint_name]] = gripper_value
             
             # Get hand command
             if self.dex3_dds:
@@ -130,11 +130,11 @@ class DDSActionProvider(ActionProvider):
                         left_positions = left_hand_cmd.get('positions', [])
                         right_positions = right_hand_cmd.get('positions', [])
                         for joint_name, left_idx in self.left_hand_joint_mapping.items():
-                            if joint_name in joint_to_index:
-                                full_action[joint_to_index[joint_name]] = left_positions[left_idx]
+                            if joint_name in self.joint_to_index:
+                                full_action[self.joint_to_index[joint_name]] = left_positions[left_idx]
                         for joint_name, right_idx in self.right_hand_joint_mapping.items():
-                            if joint_name in joint_to_index:
-                                full_action[joint_to_index[joint_name]] = right_positions[right_idx]
+                            if joint_name in self.joint_to_index:
+                                full_action[self.joint_to_index[joint_name]] = right_positions[right_idx]
                         
             # print(f"full_action: {full_action}")
             return full_action.unsqueeze(0)
