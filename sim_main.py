@@ -166,7 +166,7 @@ def main():
             color=(1.0, 0.8, 0.6),
             intensity=20000.0,
             position=(1.0, 2.0, 3.0),
-            radius=0.2,
+            radius=0.1,
             enabled=True,
             cast_shadows=True
         )

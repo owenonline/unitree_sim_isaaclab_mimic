@@ -274,8 +274,8 @@ class FileActionProviderReplay(ActionProvider):
         left_arm_action = arm_action[:7].tolist()
         right_arm_action = arm_action[7:].tolist()
         if self.enable_gripper:
-            right_hand_action = hand_action[0].tolist() #self._convert_to_gripper_range(hand_action[0]).tolist()
-            left_hand_action = hand_action[1].tolist() #self._convert_to_gripper_range(hand_action[1]).tolist()
+            right_hand_action = np.array(hand_action[:1]).tolist() 
+            left_hand_action = np.array(hand_action[1:]).tolist()
         elif self.enable_dex3:
             right_hand_action = hand_action[:7].tolist()
             left_hand_action = hand_action[7:].tolist()
