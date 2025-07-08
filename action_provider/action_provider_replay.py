@@ -167,15 +167,15 @@ class FileActionProviderReplay(ActionProvider):
                 if self.enable_dex3:
                     hand_cmd_data = self.hand_action[self.action_index]
                 env.scene.reset_to(self.sim_state_list[self.action_index], torch.tensor([0], device=env.device), is_relative=True)
-                for sensor in env.scene.sensors.values():
-                    sensor.update(0.02, force_recompute=False)
-                # env.sim.forward()
-                env.sim.render()
-                env.observation_manager.compute()
                 
                 if self.generate_data:
+                    for sensor in env.scene.sensors.values():
+                        sensor.update(0.02, force_recompute=False)
+                    env.sim.render()
+                    env.observation_manager.compute()
                     self.save_date(env,arm_cmd_data,hand_cmd_data,self.sim_state_json_list[self.action_index])
-                
+                else:
+                    env.sim.render()
                 self.action_index += 1
             else:
                 self.action_index = 10**1000
@@ -267,6 +267,17 @@ class FileActionProviderReplay(ActionProvider):
             images[name] = concatenated_image[:, x_start:x_end, :]
         return images
     def save_date(self,env,arm_action,hand_action,sim_state=None):
+        def ensure_list(data):
+            """确保数据是list类型，如果不是则进行转换"""
+            if isinstance(data, list):
+                return data
+            elif hasattr(data, 'tolist'):  # numpy array或torch tensor
+                return data.tolist()
+            elif hasattr(data, '__iter__') and not isinstance(data, (str, bytes)):  # 其他可迭代类型
+                return list(data)
+            else:  # 单个值
+                return [data]
+        
         left_arm_state,right_arm_state,left_ee_state,right_ee_state = self.get_state(env)
         images = self.get_images()
         colors = {}
@@ -284,22 +295,22 @@ class FileActionProviderReplay(ActionProvider):
         colors[f"color_{2}"] = images["right"]
         states = {
             "left_arm": {                                                                    
-                "qpos":   left_arm_state,    # numpy.array -> list
+                "qpos":   ensure_list(left_arm_state),    
                 "qvel":   [],                          
                 "torque": [],                        
             }, 
             "right_arm": {                                                                    
-                "qpos":   right_arm_state,       
+                "qpos":   ensure_list(right_arm_state),       
                 "qvel":   [],                          
                 "torque": [],                         
             },                        
             "left_ee": {                                                                    
-                "qpos":   left_ee_state,           
+                "qpos":   ensure_list(left_ee_state),           
                 "qvel":   [],                           
                 "torque": [],                          
             }, 
             "right_ee": {                                                                    
-                "qpos":   right_ee_state,       
+                "qpos":   ensure_list(right_ee_state),       
                 "qvel":   [],                           
                 "torque": [],  
             }, 
@@ -309,22 +320,22 @@ class FileActionProviderReplay(ActionProvider):
         }
         actions = {
             "left_arm": {                                   
-                "qpos":   left_arm_action,       
+                "qpos":   ensure_list(left_arm_action),       
                 "qvel":   [],       
                 "torque": [],      
             }, 
             "right_arm": {                                   
-                "qpos":   right_arm_action,       
+                "qpos":   ensure_list(right_arm_action),       
                 "qvel":   [],       
                 "torque": [],       
             },                         
             "left_ee": {                                   
-                "qpos":   left_hand_action,       
+                "qpos":   ensure_list(left_hand_action),       
                 "qvel":   [],       
                 "torque": [],       
             }, 
             "right_ee": {                                   
-                "qpos":   right_hand_action,       
+                "qpos":   ensure_list(right_hand_action),       
                 "qvel":   [],       
                 "torque": [], 
             }, 
