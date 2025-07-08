@@ -34,7 +34,7 @@ class DDSInitManager:
                 return True
             
             try:
-                ChannelFactoryInitialize(1)
+                ChannelFactoryInitialize(0)
                 self._initialized = True
                 print("[DDSInitManager] DDS factory initialized successfully")
                 return True
