@@ -206,6 +206,7 @@ def main():
         if args_cli.action_source != "replay":
             args_cli.action_source = "replay"
     # create action provider
+    print("The DDS in Sim transmits messages on channel 1. Please ensure that other DDS instances use the same channel for message exchange by setting: ChannelFactoryInitialize(1).")
     print(f"\ncreate action provider: {args_cli.action_source}...")
     action_provider = create_action_provider(env,args_cli)
     
