@@ -2,6 +2,7 @@ from action_provider.action_provider_dds import DDSActionProvider
 from action_provider.action_provider_trajectory import TrajectoryActionProvider,create_trajectory_generator
 from action_provider.action_provider_policy import PolicyActionProvider
 from action_provider.action_provider_replay import FileActionProviderReplay
+from action_provider.action_provider_wholebody_dds import DDSWholebodyActionProvider
 from pathlib import Path
 
 

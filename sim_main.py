@@ -191,22 +191,27 @@ def main():
     )
     
     # create controller
-    print("\ncreate controller...")
-    controller = RobotController(env, control_config)
+
     if not args_cli.replay_data:
+        print("========= create image server =========")
         server = ImageServer(fps=30, Unit_Test=False)
+        print("========= create image server success =========")
+        print("========= create dds =========")
         reset_pose_dds = get_reset_pose_dds()
         reset_pose_dds.start_communication(enable_publish=False, enable_subscribe=True)
         sim_state_dds = get_sim_state_dds(env,args_cli.task)
         sim_state_dds.start_communication(enable_publish=True, enable_subscribe=False)
+        print("========= create dds success =========")
     else:
         from tools.data_json_load import get_data_json_list
+        print("========= get data json list =========")
         data_idx=0
         data_json_list = get_data_json_list(args_cli.file_path)
         if args_cli.action_source != "replay":
             args_cli.action_source = "replay"
+        print("========= get data json list success =========")
     # create action provider
-    print("The DDS in Sim transmits messages on channel 1. Please ensure that other DDS instances use the same channel for message exchange by setting: ChannelFactoryInitialize(1).")
+    
     print(f"\ncreate action provider: {args_cli.action_source}...")
     action_provider = create_action_provider(env,args_cli)
     
@@ -215,7 +220,10 @@ def main():
         return
     
     # set action provider
+    print("========= create controller =========")
+    controller = RobotController(env, control_config)
     controller.set_action_provider(action_provider)
+    print("========= create controller success =========")
     
     # configure performance analysis
     if args_cli.enable_profiling:
@@ -228,12 +236,12 @@ def main():
     
     # set signal handlers
     setup_signal_handlers(controller)
-
+    print("Note: The DDS in Sim transmits messages on channel 1. Please ensure that other DDS instances use the same channel for message exchange by setting: ChannelFactoryInitialize(1).")
     try:
         # start controller - start asynchronous components
-        print("\nstart controller...")
+        print("========= start controller =========")
         controller.start()
-        print("controller started, start main loop...")
+        print("========= start controller success =========")
         
         # main loop - execute in main thread to support rendering
         last_stats_time = time.time()

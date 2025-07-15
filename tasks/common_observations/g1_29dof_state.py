@@ -141,9 +141,9 @@ def get_robot_boy_joint_states(
     
     # get the body joint indices
     # boy_joint_names = get_robot_boy_joint_names()
-    
+    # print(f"boy_joint_names: {boy_joint_names}")
     # all_joint_names = env.scene["robot"].data.joint_names
-    # # print(f"all_joint_names: {all_joint_names}")
+    # print(f"all_joint_names: {all_joint_names}")
     # boy_joint_indices = [all_joint_names.index(name) for name in boy_joint_names]
     boy_joint_indices = [0, 3, 6, 9, 13, 17, 1, 4, 7, 10, 14, 18, 2, 5, 8, 11, 15, 19, 21, 23, 25, 27, 12, 16, 20, 22, 24, 26, 28]
 
@@ -178,6 +178,25 @@ def get_robot_boy_joint_states(
     
     return combined_states
 
+
+def get_gravity_quaternion_from_root_state(env: ManagerBasedRLEnv):
+    body_names = env.scene["robot"].data.body_names
+    imu_pelvis_idx = body_names.index("imu_in_pelvis")
+    imu_torso_idx = body_names.index("imu_in_torso")
+    print(f"imu_pelvis_idx: {imu_pelvis_idx}")
+    print(f"imu_torso_idx: {imu_torso_idx}")
+    pose = env.scene["robot"].data.body_link_pose_w  # [num_links, 7] (pos + quat)
+    vel = env.scene["robot"].data.body_link_vel_w    # [num_links, 6] (lin_vel + ang_vel)
+
+    # 取出IMU位置+旋转
+    pelvis_pose = pose[:, imu_pelvis_idx, :]  # [B, 7]
+    torso_pose = pose[:, imu_torso_idx, :]
+
+    # 取出IMU线速度+角速度
+    pelvis_vel = vel[:, imu_pelvis_idx, :]    # [B, 6]
+    torso_vel = vel[:, imu_torso_idx, :]
+    return pelvis_pose, pelvis_vel, torso_pose, torso_vel
+
 def get_robot_imu_data(
     env: ManagerBasedRLEnv,
 ) -> torch.Tensor:
@@ -195,15 +214,70 @@ def get_robot_imu_data(
     """
     # get the robot root state
     root_state = env.scene["robot"].data.root_state_w
-    
+    # print(env.scene["robot"].data.__dict__.keys())
+    # pelvis_pose, pelvis_vel, torso_pose, torso_vel = get_gravity_quaternion_from_root_state(env)
+    # print(f"pelvis_pose: {pelvis_pose}")
+    # print(f"pelvis_vel: {pelvis_vel}")
+    # print(f"torso_pose: {torso_pose}")
+    # print(f"torso_vel: {torso_vel}")
     # extract the position, rotation, velocity and angular velocity
     pos = root_state[:, :3]  # position
     quat = root_state[:, 3:7]  # rotation quaternion
     vel = root_state[:, 7:10]  # linear velocity
     ang_vel = root_state[:, 10:13]  # angular velocity
-    
+    # pos = torso_pose[:, :3]
+    # quat = torso_pose[:, 3:7]
+    # vel = torso_vel[:, :3]
+    # ang_vel = torso_vel[:, 3:6]
+    # qu = get_gravity_quaternion(env)
+    # print(f"qu: {qu}")
+    # print(f"quat: {quat}")
     # concatenate all data
     imu_data = torch.cat([pos, quat, vel, ang_vel], dim=1)
     
     return imu_data
 
+
+
+# def get_robot_imu_data(env):
+#     data = env.scene["robot"].data
+
+#     # quaternion from root_state_w
+#     root_state = data._root_state_w  # [B, 13]: [pos(3), quat(4), vel(3), ang_vel(3)]
+#     quaternion = root_state[:, 3:7]
+
+#     # gyroscope from root_state_w angular velocity
+#     gyroscope = root_state[:, 10:13]
+
+#     # accelerometer: root COM acceleration
+#     accelerometer = data._root_com_acc_w[:, :3]  # [B, 3]
+
+#     # convert quaternion to RPY (Roll, Pitch, Yaw)
+#     rpy = quaternion_to_rpy(quaternion)
+
+#     return {
+#         "quaternion": quaternion,
+#         "gyroscope": gyroscope,
+#         "accelerometer": accelerometer,
+#         "rpy": rpy
+#     }
+
+def quaternion_to_rpy(quat: torch.Tensor) -> torch.Tensor:
+    """
+    Convert quaternion (w, x, y, z) to roll, pitch, yaw (radians).
+    """
+    w, x, y, z = quat[:, 0], quat[:, 1], quat[:, 2], quat[:, 3]
+
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + y * y)
+    roll = torch.atan2(t0, t1)
+
+    t2 = +2.0 * (w * y - z * x)
+    t2 = torch.clamp(t2, -1.0, 1.0)
+    pitch = torch.asin(t2)
+
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (y * y + z * z)
+    yaw = torch.atan2(t3, t4)
+
+    return torch.stack([roll, pitch, yaw], dim=1)

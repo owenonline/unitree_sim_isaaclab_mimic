@@ -91,7 +91,7 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
     # 2. object configuration (cylinder)     
     object = RigidObjectCfg(
         prim_path="/World/envs/env_.*/Object",    # object in the scene
-        init_state=RigidObjectCfg.InitialStateCfg(pos=[-0.35, 0.40, 0.84], # initial position (pos)
+        init_state=RigidObjectCfg.InitialStateCfg(pos=[-0.35, 0.40, 0.84], # initial position (pos) 
                                                   rot=[1, 0, 0, 0]), # initial rotation (rot)
         spawn=sim_utils.CylinderCfg(
             radius=0.018,    # cylinder radius (radius)
