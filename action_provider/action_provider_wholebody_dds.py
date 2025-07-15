@@ -18,11 +18,11 @@ class DDSWholebodyActionProvider(ActionProvider):
         self.robot_dds = None
         self.gripper_dds = None
         self.dex3_dds = None
-        self._is_running = True
-        self._action_thread = None
+        # self._is_running = True
+        # self._action_thread = None
         self._setup_dds()
         self._setup_joint_mapping()
-        self.start_action_thread()
+        # self.start_action_thread()
     def _setup_dds(self):
         """Setup DDS communication"""
         print(f"enable_robot: {self.enable_robot}")
@@ -107,47 +107,47 @@ class DDSWholebodyActionProvider(ActionProvider):
         self.all_joint_names = self.env.scene["robot"].data.joint_names
         self.joint_to_index = {name: i for i, name in enumerate(self.all_joint_names)}
 
-    def start_action_thread(self):
-        """启动动作执行线程"""
-        if self._action_thread is None or not self._action_thread.is_alive():
-            self._is_running = True
-            self._action_thread = threading.Thread(target=self._apply_action_loop, daemon=True)
-            self._action_thread.start()
-            print(f"[{self.name}] Action thread started")
-        else:
-            print(f"[{self.name}] Action thread is already running")
+    # def start_action_thread(self):
+    #     """启动动作执行线程"""
+    #     if self._action_thread is None or not self._action_thread.is_alive():
+    #         self._is_running = True
+    #         self._action_thread = threading.Thread(target=self._apply_action_loop, daemon=True)
+    #         self._action_thread.start()
+    #         print(f"[{self.name}] Action thread started")
+    #     else:
+    #         print(f"[{self.name}] Action thread is already running")
     
-    def stop_action_thread(self):
-        """停止动作执行线程"""
-        if self._is_running:
-            self._is_running = False
-            if self._action_thread and self._action_thread.is_alive():
-                self._action_thread.join(timeout=5.0)  # 等待最多5秒
-                if self._action_thread.is_alive():
-                    print(f"[{self.name}] Warning: Action thread did not stop gracefully")
-                else:
-                    print(f"[{self.name}] Action thread stopped")
-            self._action_thread = None
+    # def stop_action_thread(self):
+    #     """停止动作执行线程"""
+    #     if self._is_running:
+    #         self._is_running = False
+    #         if self._action_thread and self._action_thread.is_alive():
+    #             self._action_thread.join(timeout=5.0)  # 等待最多5秒
+    #             if self._action_thread.is_alive():
+    #                 print(f"[{self.name}] Warning: Action thread did not stop gracefully")
+    #             else:
+    #                 print(f"[{self.name}] Action thread stopped")
+    #         self._action_thread = None
     
-    def _apply_action_loop(self):
-        """线程中执行的动作循环"""
-        print(f"[{self.name}] Action loop started in thread")
-        try:
-            start_time = time.time()
-            while self._is_running:
-                action = self.get_action(self.env)
-                if action is not None:
-                    self.env.scene["robot"].set_joint_position_target(action)
-                    self.env.scene.write_data_to_sim()
-                    self.env.scene.update(dt=self.env.physics_dt)
-                    self.env.sim.step(render=False)
-                    time.sleep(self.env.physics_dt)
-                print(f"[{self.name}] Action loop time: {time.time() - start_time}")
-                start_time = time.time()
-        except Exception as e:
-            print(f"[{self.name}] Action loop error: {e}")
-        finally:
-            print(f"[{self.name}] Action loop ended")        
+    # def _apply_action_loop(self):
+    #     """线程中执行的动作循环"""
+    #     print(f"[{self.name}] Action loop started in thread")
+    #     try:
+    #         start_time = time.time()
+    #         while self._is_running:
+    #             action = self.get_action(self.env)
+    #             if action is not None:
+    #                 self.env.scene["robot"].set_joint_position_target(action)
+    #                 self.env.scene.write_data_to_sim()
+    #                 self.env.scene.update(dt=self.env.physics_dt)
+    #                 self.env.sim.step(render=False)
+    #                 time.sleep(self.env.physics_dt)start_action_thread
+    #             print(f"[{self.name}] Action loop time: {time.time() - start_time}")
+    #             start_time = time.time()
+    #     except Exception as e:
+    #         print(f"[{self.name}] Action loop error: {e}")
+    #     finally:
+    #         print(f"[{self.name}] Action loop ended")        
     def get_action(self, env) -> Optional[torch.Tensor]:
         """Get action from DDS"""
         try:
@@ -212,7 +212,7 @@ class DDSWholebodyActionProvider(ActionProvider):
     def cleanup(self):
         """Clean up DDS resources"""
         try:
-            self.stop_action_thread()
+            # self.stop_action_thread()
             if self.robot_dds:
                 self.robot_dds.stop_communication()
             if self.gripper_dds:

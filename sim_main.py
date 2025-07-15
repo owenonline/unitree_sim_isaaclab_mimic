@@ -26,7 +26,7 @@ from image_server.image_server import ImageServer
 parser = argparse.ArgumentParser(description="Unitree Simulation")
 parser.add_argument("--task", type=str, default="Isaac-PickPlace-G129-Head-Waist-Fix", help="task name")
 parser.add_argument("--action_source", type=str, default="dds", 
-                   choices=["dds", "file", "trajectory", "policy", "replay"], 
+                   choices=["dds", "file", "trajectory", "policy", "replay","dds_wholebody"], 
                    help="Action source")
 parser.add_argument("--file_path", type=str, default="./data", help="file path (when action_source=file)")
 

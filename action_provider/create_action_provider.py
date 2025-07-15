@@ -15,7 +15,13 @@ def create_action_provider(env,args):
             enable_gripper=args.enable_gripper_dds, 
             enable_dex3=args.enable_dex3_dds
         )
-    
+    elif args.action_source == "dds_wholebody":
+        return DDSWholebodyActionProvider(
+            env=env,
+            robot_type=args.robot_type,
+            enable_gripper=args.enable_gripper_dds, 
+            enable_dex3=args.enable_dex3_dds
+        )
     elif args.action_source == "trajectory":
         trajectory_gen = create_trajectory_generator()
         return TrajectoryActionProvider(trajectory_gen)
