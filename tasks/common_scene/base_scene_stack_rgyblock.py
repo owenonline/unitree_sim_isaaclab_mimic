@@ -54,7 +54,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
                 disable_gravity=False,
                 retain_accelerations=False
             ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=2.0),
+            mass_props=sim_utils.MassPropertiesCfg(mass=3.0),
             collision_props=sim_utils.CollisionPropertiesCfg(
                 collision_enabled=True,
                 contact_offset=0.01,
@@ -66,9 +66,9 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
             physics_material=sim_utils.RigidBodyMaterialCfg(
                 friction_combine_mode="max",
                 restitution_combine_mode="min",
-                static_friction=5.0,
-                dynamic_friction=1.5,
-                restitution=0.01,
+                static_friction=10,
+                dynamic_friction=0.5,
+                restitution=0.0,
             ),
         ),
     )
@@ -85,7 +85,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
                 disable_gravity=False,
                 retain_accelerations=False
             ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=2.0),
+            mass_props=sim_utils.MassPropertiesCfg(mass=3.0),
             collision_props=sim_utils.CollisionPropertiesCfg(
                 collision_enabled=True,
                 contact_offset=0.01,
@@ -97,9 +97,9 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
             physics_material=sim_utils.RigidBodyMaterialCfg(
                 friction_combine_mode="max",
                 restitution_combine_mode="min",
-                static_friction=5.0,
-                dynamic_friction=1.5,
-                restitution=0.01,
+                static_friction=10,
+                dynamic_friction=0.5,
+                restitution=0.0,
             ),
         ),
     )
@@ -115,7 +115,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
                 disable_gravity=False,
                 retain_accelerations=False
             ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=2.0),
+            mass_props=sim_utils.MassPropertiesCfg(mass=3.0),
             collision_props=sim_utils.CollisionPropertiesCfg(
                 collision_enabled=True,
                 contact_offset=0.01,
@@ -127,9 +127,9 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
             physics_material=sim_utils.RigidBodyMaterialCfg(
                 friction_combine_mode="max",
                 restitution_combine_mode="min",
-                static_friction=5.0,
-                dynamic_friction=1.5,
-                restitution=0.01,
+                static_friction=10,
+                dynamic_friction=0.5,
+                restitution=0.0,
             ),
         ),
     )

@@ -143,11 +143,20 @@ class PickPlaceG129DEX3BaseFixEnvCfg(ManagerBasedRLEnvCfg):
         self.decimation = 4
         self.episode_length_s = 20.0
         # simulation settings
-        self.sim.dt = 0.005
-        # fix render interval to avoid excessive rendering
-        self.sim.render_interval = self.decimation  # set render interval to decimation
+        self.sim.dt = 0.002
+        self.sim.render_interval = self.decimation
+        self.sim.physx.bounce_threshold_velocity = 0.01
+        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4
+        self.sim.physx.gpu_total_aggregate_pairs_capacity = 32 * 1024
+        self.sim.physx.friction_correlation_distance = 0.003
+        self.sim.physx.enable_ccd = True
+        self.sim.physx.gpu_constraint_solver_heavy_spring_enabled = True
+        self.sim.physx.num_substeps = 4
+        self.sim.physx.contact_offset = 0.01
+        self.sim.physx.rest_offset = 0.001
+        self.sim.physx.num_position_iterations = 16
+        self.sim.physx.num_velocity_iterations = 4
 
-        # create event manager
         self.event_manager = SimpleEventManager()
 
         # register

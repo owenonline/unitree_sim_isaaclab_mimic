@@ -53,7 +53,7 @@ parser.add_argument("--profile_interval", type=int, default=500, help="performan
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 
-# 验证参数：enable_dex3_dds 和 enable_gripper_dds 不能同时启用
+
 if args_cli.enable_dex3_dds and args_cli.enable_gripper_dds:
     print("Error: enable_dex3_dds and enable_gripper_dds cannot be enabled at the same time")
     print("Please select one of the options")
@@ -64,21 +64,15 @@ import pinocchio
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 
-# import after simulator starts
-import omni.log
-import isaaclab_mimic.envs  # noqa: F401
-# import optimized layered control system
 from layeredcontrol.robot_control_system import (
     RobotController, 
     ControlConfig,
 )
 
 from dds.reset_pose_dds import get_reset_pose_dds
-# import existing modules
 import tasks
 from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
 
-import omni.usd
 from tools.augmentation_utils import (
     update_light,
     batch_augment_cameras_by_name,
@@ -135,26 +129,6 @@ def main():
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=1)
     env_cfg.env_name = args_cli.task
     
-    # remove timeout termination condition
-    env_cfg.terminations.time_out = None
-    
-    # performance optimization configuration
-    if hasattr(env_cfg, 'sim'):
-        # optimize simulation settings
-        env_cfg.sim.dt = 0.01  # normal mode
-        if hasattr(env_cfg.sim, 'substeps'):
-            env_cfg.sim.substeps = 1
-        
-        if hasattr(env_cfg.sim, 'use_gpu_pipeline'):
-            env_cfg.sim.use_gpu_pipeline = True  # enable GPU pipeline
-    
-    # # optimize observation frequency
-    if hasattr(env_cfg, 'decimation'):
-            env_cfg.decimation = 2
-    
-    # disable unnecessary calculations
-    if hasattr(env_cfg, 'enable_render'):
-        env_cfg.enable_render = True  # keep rendering but optimize frequency
     
     # create environment
     print("\ncreate environment...")
