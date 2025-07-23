@@ -7,16 +7,18 @@ import torch
 class DDSActionProvider(ActionProvider):
     """Action provider based on DDS"""
     
-    def __init__(self,env, robot_type="g129", enable_gripper=False, enable_dex3=False):
+    def __init__(self,env, robot_type="g129", enable_gripper=False, enable_dex3=False, enable_inspire=False):
         super().__init__("DDSActionProvider")
         self.enable_robot = robot_type
         self.enable_gripper = enable_gripper
         self.enable_dex3 = enable_dex3
+        self.enable_inspire = enable_inspire
         self.env = env
         # Initialize DDS communication
         self.robot_dds = None
         self.gripper_dds = None
         self.dex3_dds = None
+        self.inspire_dds = None
         self._setup_dds()
         self._setup_joint_mapping()
     
@@ -35,10 +37,14 @@ class DDSActionProvider(ActionProvider):
                 from dds.gripper_dds import start_gripper_subscriber_only
                 self.gripper_dds = start_gripper_subscriber_only()
                 print(f"gripper_dds start_gripper_subscriber_only success")
-            if self.enable_dex3:
+            elif self.enable_dex3:
                 from dds.dex3_dds import start_hand_subscriber_only
                 self.dex3_dds = start_hand_subscriber_only()
                 print(f"dex3_dds start_hand_subscriber_only success")
+            elif self.enable_inspire:
+                from dds.inspire_dds import start_inspire_hand_subscriber_only
+                self.inspire_dds = start_inspire_hand_subscriber_only()
+                print(f"inspire_dds start_inspire_hand_subscriber_only success")
             print(f"[{self.name}] DDS communication initialized")
         except Exception as e:
             print(f"[{self.name}] DDS initialization failed: {e}")
@@ -86,6 +92,36 @@ class DDSActionProvider(ActionProvider):
                 "right_hand_middle_1_joint":4,
                 "right_hand_index_0_joint":5,
                 "right_hand_index_1_joint":6}
+        if self.enable_inspire:
+            self.inspire_hand_joint_mapping = {
+                "R_pinky_proximal_joint":0,
+                "R_ring_proximal_joint":1,
+                "R_middle_proximal_joint":2,
+                "R_index_proximal_joint":3,
+                "R_thumb_proximal_pitch_joint":4,
+                "R_thumb_proximal_yaw_joint":5,
+                "L_pinky_proximal_joint":6,
+                "L_ring_proximal_joint":7,
+                "L_middle_proximal_joint":8,
+                "L_index_proximal_joint":9,
+                "L_thumb_proximal_pitch_joint":10,
+                "L_thumb_proximal_yaw_joint":11,
+            }
+            self.special_joint_mapping = {
+                "L_index_intermediate_joint":[9,1],
+                "L_middle_intermediate_joint":[8,1],
+                "L_pinky_intermediate_joint":[6,1],
+                "L_ring_intermediate_joint":[7,1],
+                "L_thumb_intermediate_joint":[10,1.5],
+                "L_thumb_distal_joint":[10,2.4],
+
+                "R_index_intermediate_joint":[3,1],
+                "R_middle_intermediate_joint":[2,1],
+                "R_pinky_intermediate_joint":[0,1],
+                "R_ring_intermediate_joint":[1,1],
+                "R_thumb_intermediate_joint":[4,1.5],
+                "R_thumb_distal_joint":[4,2.4],
+            }
         self.all_joint_names = self.env.scene["robot"].data.joint_names
         self.joint_to_index = {name: i for i, name in enumerate(self.all_joint_names)}
         
@@ -120,12 +156,11 @@ class DDSActionProvider(ActionProvider):
                                 full_action[self.joint_to_index[joint_name]] = gripper_value
             
             # Get hand command
-            if self.dex3_dds:
+            elif self.dex3_dds:
                 hand_cmds = self.dex3_dds.get_hand_commands()
                 if hand_cmds:
                     left_hand_cmd = hand_cmds.get('left_hand_cmd', {})
                     right_hand_cmd = hand_cmds.get('right_hand_cmd', {})
-                    
                     if left_hand_cmd and right_hand_cmd:
                         left_positions = left_hand_cmd.get('positions', [])
                         right_positions = right_hand_cmd.get('positions', [])
@@ -135,8 +170,27 @@ class DDSActionProvider(ActionProvider):
                         for joint_name, right_idx in self.right_hand_joint_mapping.items():
                             if joint_name in self.joint_to_index:
                                 full_action[self.joint_to_index[joint_name]] = right_positions[right_idx]
-                        
+            elif self.inspire_dds:
+                inspire_cmds = self.inspire_dds.get_inspire_hand_command()
+                if inspire_cmds and 'positions' in inspire_cmds:
+                        inspire_cmds_positions = inspire_cmds['positions']
+                        # print(f"gripper_positions: {gripper_positions}")
+                        if len(inspire_cmds_positions) >= 12:
+                            for joint_name, inspire_hand_idx in self.inspire_hand_joint_mapping.items():
+                                if joint_name in self.joint_to_index:
+                                    # Convert gripper range
+                                    inspire_value = inspire_cmds_positions[inspire_hand_idx]
+                                    # print(f"gripper_value: {gripper_value}")
+                                    full_action[self.joint_to_index[joint_name]] = inspire_value
+                            for joint_name, special_idx in self.special_joint_mapping.items():
+                                if joint_name in self.joint_to_index:
+                                    inspire_value = inspire_cmds_positions[special_idx[0]]
+                                    full_action[self.joint_to_index[joint_name]] = inspire_value * special_idx[1]
+                            
             # print(f"full_action: {full_action}")
+            # self.env.scene["robot"].set_joint_position_target(full_action)
+            # self.env.scene["robot"].write_data_to_sim()
+            # self.env.observation_manager.compute()
             return full_action.unsqueeze(0)
             
         except Exception as e:
@@ -159,5 +213,7 @@ class DDSActionProvider(ActionProvider):
                 self.gripper_dds.stop_communication()
             if self.dex3_dds:
                 self.dex3_dds.stop_communication()
+            if self.inspire_dds:
+                self.inspire_dds.stop_communication()
         except Exception as e:
             print(f"[{self.name}] Clean up DDS resources failed: {e}")

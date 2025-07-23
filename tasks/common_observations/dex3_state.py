@@ -94,7 +94,6 @@ def get_robot_dex3_joint_states(
     
     # get the gripper joint indices (last 14 joints)
     gripper_joint_indices=[31, 37, 41, 30, 36, 29, 35, 34, 40, 42, 33, 39, 32, 38]
-
     if len(gripper_joint_indices) == 14:
         # extract the gripper joint states in the specified order
         gripper_positions = joint_pos[:, gripper_joint_indices]

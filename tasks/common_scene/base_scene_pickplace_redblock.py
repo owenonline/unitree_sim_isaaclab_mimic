@@ -55,7 +55,7 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
                 disable_gravity=False,
                 retain_accelerations=False
             ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=3.0),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1.5),
             collision_props=sim_utils.CollisionPropertiesCfg(
                 collision_enabled=True,
                 contact_offset=0.01,

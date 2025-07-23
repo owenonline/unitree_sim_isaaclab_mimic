@@ -33,6 +33,7 @@ parser.add_argument("--file_path", type=str, default="./data", help="file path (
 parser.add_argument("--robot_type", type=str, default="g129", help="robot type")
 parser.add_argument("--enable_gripper_dds", action="store_true", help="enable gripper DDS")
 parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexterous hand DDS")
+parser.add_argument("--enable_inspire_dds", action="store_true", help="enable inspire hand DDS")
 parser.add_argument("--stats_interval", type=float, default=10.0, help="statistics print interval (seconds)")
 
 parser.add_argument("--generate_data_dir", type=str, default="./data", help="save data dir")
@@ -54,8 +55,8 @@ AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 
 
-if args_cli.enable_dex3_dds and args_cli.enable_gripper_dds:
-    print("Error: enable_dex3_dds and enable_gripper_dds cannot be enabled at the same time")
+if args_cli.enable_dex3_dds and args_cli.enable_gripper_dds and args_cli.enable_inspire_dds:
+    print("Error: enable_dex3_dds and enable_gripper_dds and enable_inspire_dds cannot be enabled at the same time")
     print("Please select one of the options")
     sys.exit(1)
 
@@ -126,13 +127,21 @@ def main():
     print("=" * 60)
 
     # parse environment configuration
-    env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=1)
-    env_cfg.env_name = args_cli.task
-    
+    try:
+        env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=1)
+        env_cfg.env_name = args_cli.task
+    except Exception as e:
+        print(f"Failed to parse environment configuration: {e}")
+        return
     
     # create environment
     print("\ncreate environment...")
-    env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+    try:
+        env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+        print(f"\ncreate environment success ...")
+    except Exception as e:
+        print(f"\nFailed to create environment: {e}")
+        return
     # reset environment
     if args_cli.modify_light:
         update_light(
@@ -159,22 +168,34 @@ def main():
     
     
     # create simplified control configuration
-    control_config = ControlConfig(
-        step_hz=args_cli.step_hz,
-        replay_mode=args_cli.replay_data
-    )
+    try:    
+        control_config = ControlConfig(
+            step_hz=args_cli.step_hz,
+            replay_mode=args_cli.replay_data
+        )
+    except Exception as e:
+        print(f"Failed to create control configuration: {e}")
+        return
     
     # create controller
 
     if not args_cli.replay_data:
         print("========= create image server =========")
-        server = ImageServer(fps=30, Unit_Test=False)
+        try:
+            server = ImageServer(fps=30, Unit_Test=False)
+        except Exception as e:
+            print(f"Failed to create image server: {e}")
+            return
         print("========= create image server success =========")
         print("========= create dds =========")
-        reset_pose_dds = get_reset_pose_dds()
-        reset_pose_dds.start_communication(enable_publish=False, enable_subscribe=True)
-        sim_state_dds = get_sim_state_dds(env,args_cli.task)
-        sim_state_dds.start_communication(enable_publish=True, enable_subscribe=False)
+        try:
+            reset_pose_dds = get_reset_pose_dds()
+            reset_pose_dds.start_communication(enable_publish=False, enable_subscribe=True)
+            sim_state_dds = get_sim_state_dds(env,args_cli.task)
+            sim_state_dds.start_communication(enable_publish=True, enable_subscribe=False)
+        except Exception as e:
+            print(f"Failed to create dds: {e}")
+            return
         print("========= create dds success =========")
     else:
         from tools.data_json_load import get_data_json_list
@@ -187,10 +208,13 @@ def main():
     # create action provider
     
     print(f"\ncreate action provider: {args_cli.action_source}...")
-    action_provider = create_action_provider(env,args_cli)
-    
-    if action_provider is None:
-        print("action provider creation failed, exiting")
+    try:
+        action_provider = create_action_provider(env,args_cli)
+        if action_provider is None:
+            print("action provider creation failed, exiting")
+            return
+    except Exception as e:
+        print(f"Failed to create action provider: {e}")
         return
     
     # set action provider
@@ -389,9 +413,13 @@ if __name__ == "__main__":
 
 # python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_gripper_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-Cylinder-G129-Dex3-Joint    --enable_dex3_dds --robot_type g129
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-Cylinder-G129-Inspire-Joint    --enable_inspire_dds --robot_type g129
 
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-RedBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-RedBlock-G129-Dex3-Joint    --enable_dex3_dds --robot_type g129
+# python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-RedBlock-G129-Inspire-Joint    --enable_inspire_dds --robot_type g129
+
 
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex3-Joint     --enable_dex3_dds --robot_type g129
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Inspire-Joint     --enable_inspire_dds --robot_type g129

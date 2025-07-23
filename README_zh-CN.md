@@ -30,6 +30,7 @@
   <tr>
     <th>G1-29dof-gripper</th>
     <th>G1-29dof-dex3</th>
+    <th>G1-29dof-inspire</th>
   </tr>
   <tr>
     <td align="center">
@@ -41,6 +42,11 @@
       <img src="./img/pickplace_clinder_g129_dex3.png" width="300" alt="G1-dex3-cylinder"/>
       <br/>
       <code>Isaac-PickPlace-Cylinder-G129-Dex3-Joint</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-PickPlace-Cylinder-G129-Inspire-Joint.png" width="300" alt="G1-dex3-cylinder"/>
+      <br/>
+      <code>Isaac-PickPlace-Cylinder-G129-Inspire-Joint</code>
     </td>
   </tr>
   <tr>
@@ -54,6 +60,11 @@
       <br/>
       <code>Isaac-PickPlace-RedBlock-G129-Dex3-Joint</code>
     </td>
+    <td align="center">
+      <img src="./img/Isaac-PickPlace-RedBlock-G129-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-PickPlace-RedBlock-G129-Inspire-Joint</code>
+    </td>
   </tr>
   <tr>
     <td align="center">
@@ -65,6 +76,11 @@
       <img src="./img/stack_rgyblock_g129_dex3.png" width="300" alt="G1-dex3-redblock"/>
       <br/>
       <code>Isaac-Stack-RgyBlock-G129-Dex3-Joint</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-Stack-RgyBlock-G129-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-Stack-RgyBlock-G129-Inspire-Joint</code>
     </td>
   </tr>
 </table>

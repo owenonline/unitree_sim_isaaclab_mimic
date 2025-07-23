@@ -8,16 +8,18 @@ import threading
 class DDSWholebodyActionProvider(ActionProvider):
     """Action provider based on DDS"""
     
-    def __init__(self,env, robot_type="g129", enable_gripper=False, enable_dex3=False):
+    def __init__(self,env, robot_type="g129", enable_gripper=False, enable_dex3=False, enable_inspire=False):
         super().__init__("DDSWholebodyActionProvider")
         self.enable_robot = robot_type
         self.enable_gripper = enable_gripper
         self.enable_dex3 = enable_dex3
+        self.enable_inspire = enable_inspire
         self.env = env
         # Initialize DDS communication
         self.robot_dds = None
         self.gripper_dds = None
         self.dex3_dds = None
+        self.inspire_dds = None
         # self._is_running = True
         # self._action_thread = None
         self._setup_dds()
@@ -42,6 +44,10 @@ class DDSWholebodyActionProvider(ActionProvider):
                 from dds.dex3_dds import start_hand_subscriber_only
                 self.dex3_dds = start_hand_subscriber_only()
                 print(f"dex3_dds start_hand_subscriber_only success")
+            if self.enable_inspire:
+                from dds.inspire_dds import start_inspire_hand_subscriber_only
+                self.inspire_dds = start_inspire_hand_subscriber_only()
+                print(f"inspire_dds start_inspire_hand_subscriber_only success")
             print(f"[{self.name}] DDS communication initialized")
         except Exception as e:
             print(f"[{self.name}] DDS initialization failed: {e}")
