@@ -25,6 +25,7 @@ multi_image_writer = MultiImageWriter()
 def get_camera_image(
     env: ManagerBasedRLEnv,
 ) -> dict:
+    # pass
     """get multiple camera images and write them to shared memory
     
     Args:
@@ -72,8 +73,6 @@ def get_camera_image(
     # write the multi-image data to shared memory
     if images:
         success = multi_image_writer.write_images(images)
-        if not success:
-            print(f"[camera_state] Failed to write images to shared memory. Available cameras: {list(images.keys())}")
     else:
         print("[camera_state] No camera images found in the environment")
     

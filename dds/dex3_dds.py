@@ -303,49 +303,6 @@ class Dex3DDS(BaseDDSNode):
         except Exception as e:
             print(f"dex3_dds [{self.node_name}] Error writing {hand_side} hand state: {e}")
     
-    def _publish_loop(self):
-        """Rewrite the publish loop to handle multiple publishers"""
-        print(f"[{self.node_name}] Publish thread started")
-        
-        while self.running:
-            try:
-                if self.input_shm and (self.left_state_publisher or self.right_state_publisher):
-                    # read the data from the shared memory
-                    data = self.input_shm.read_data()
-                    if data:
-                        # process the data and publish (the publishing is already handled in process_publish_data)
-                        self.process_publish_data(data)
-                        
-                        # call the callback function
-                        if self.publish_callback:
-                            self.publish_callback(data, None)
-                
-                import time
-                time.sleep(0.001)  # 1ms loop
-                
-            except Exception as e:
-                print(f"[{self.node_name}] Error in publish loop: {e}")
-                import time
-                time.sleep(0.01)
-        
-        print(f"[{self.node_name}] Publish thread stopped")
-    
-    def _subscribe_loop(self):
-        """Rewrite the subscribe loop to handle multiple subscribers"""
-        print(f"[{self.node_name}] Subscribe thread started")
-        
-        loop_count = 0
-        while self.running:
-            try:
-                import time
-                time.sleep(0.001)  # keep the thread alive
-                loop_count += 1
-            except Exception as e:
-                print(f"[{self.node_name}] Error in subscribe loop: {e}")
-                import time
-                time.sleep(0.01)
-        
-        print(f"[{self.node_name}] Subscribe thread stopped")
     
     def start(self, enable_publish: bool = True, enable_subscribe: bool = True):
         """Rewrite the start method to handle multiple publishers and subscribers"""
@@ -379,12 +336,14 @@ class Dex3DDS(BaseDDSNode):
             
             # start the publish thread (check if there is any publisher)
             if enable_publish and (self.left_state_publisher or self.right_state_publisher):
+                self.publisher=True
                 self.publish_thread = threading.Thread(target=self._publish_loop)
                 self.publish_thread.daemon = True
                 self.publish_thread.start()
-            
+
             # start the subscribe thread (check if there is any subscriber)
             if enable_subscribe and (self.left_cmd_subscriber or self.right_cmd_subscriber):
+                self.subscriber = True
                 print(f"[{self.node_name}] Starting subscribe thread...")
                 self.subscribe_thread = threading.Thread(target=self._subscribe_loop)
                 self.subscribe_thread.daemon = True
@@ -419,6 +378,7 @@ class Dex3DDS(BaseDDSNode):
                     if self.setup_publisher():
                         if not self.publish_thread or not self.publish_thread.is_alive():
                             import threading
+                            self.publisher=True
                             self.publish_thread = threading.Thread(target=self._publish_loop)
                             self.publish_thread.daemon = True
                             self.publish_thread.start()
@@ -429,6 +389,7 @@ class Dex3DDS(BaseDDSNode):
                     print(f"[{self.node_name}] Add subscribe function...")
                     if self.setup_subscriber():
                         if not self.subscribe_thread or not self.subscribe_thread.is_alive():
+                            self.subscriber = True
                             import threading
                             self.subscribe_thread = threading.Thread(target=self._subscribe_loop)
                             self.subscribe_thread.daemon = True

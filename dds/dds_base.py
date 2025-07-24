@@ -164,7 +164,8 @@ class BaseDDSNode(ABC):
         """
         self.node_name = node_name
         self.running = False
-        
+        self.publish_started = False
+        self.subscribe_started = False
         # thread management
         self.publish_thread = None
         self.subscribe_thread = None
@@ -276,6 +277,10 @@ class BaseDDSNode(ABC):
                     # call callback function
                     if self.publish_callback:
                         self.publish_callback("", msg)
+                elif self.publisher is None:
+                    print(f"[{self.node_name}] Warning: publisher is empty, cannot start publish thread")
+                else:
+                    print(f"[{self.node_name}] Warning: publisher is not set, cannot start publish thread")
                 time.sleep(0.001)  # 1ms循环
                 
             except Exception as e:
@@ -323,7 +328,7 @@ class BaseDDSNode(ABC):
             enable_publish: whether to enable publish
             enable_subscribe: whether to enable subscribe
         """
-        if self.running:
+        if self.running and self.publisher is not None and self.subscriber is not None:
             print(f"[{self.node_name}] Node already running")
             return
         
@@ -334,13 +339,13 @@ class BaseDDSNode(ABC):
                 return
             
             # setup publisher
-            if enable_publish:
+            if enable_publish and self.publisher is None and not self.publish_started:
                 if not self.setup_publisher():
                     print(f"[{self.node_name}] Failed to setup publisher")
                     return
             
             # setup subscriber  
-            if enable_subscribe:
+            if enable_subscribe and self.subscriber is None and not self.subscribe_started:
                 print(f"[{self.node_name}] Setting up subscriber...")
                 if not self.setup_subscriber():
                     print(f"[{self.node_name}] Failed to setup subscriber")
@@ -351,21 +356,25 @@ class BaseDDSNode(ABC):
             self.running = True
             
             # start publish thread
-            if enable_publish and self.publisher:
+            if enable_publish and self.publisher and not self.publish_started:
+                print(f"[{self.node_name}] Starting publish thread...")
                 self.publish_thread = threading.Thread(target=self._publish_loop)
                 self.publish_thread.daemon = True
                 self.publish_thread.start()
-            
+                self.publish_started = True
+                print(f"[{self.node_name}] Publish thread started")
+            else:
+                print(f"[{self.node_name}] Warning: publish is started")
             # start subscribe thread
-            if enable_subscribe and self.subscriber:
+            if enable_subscribe and self.subscriber and not self.subscribe_started:
                 print(f"[{self.node_name}] Starting subscribe thread...")
                 self.subscribe_thread = threading.Thread(target=self._subscribe_loop)
                 self.subscribe_thread.daemon = True
                 self.subscribe_thread.start()
+                self.subscribe_started = True
                 print(f"[{self.node_name}] Subscribe thread started")
-            elif enable_subscribe:
-                print(f"[{self.node_name}] Warning: subscriber is empty, cannot start subscribe thread")
-            
+            else:
+                print(f"[{self.node_name}] Warning: subscribe is started")
             print(f"[{self.node_name}] Node started successfully")
             
         except Exception as e:

@@ -142,6 +142,10 @@ def main():
     except Exception as e:
         print(f"\nFailed to create environment: {e}")
         return
+    
+    print("\n")
+    print("***  Please left-click on the Sim window to activate rendering. ***")
+    print("\n")
     # reset environment
     if args_cli.modify_light:
         update_light(
@@ -165,7 +169,7 @@ def main():
     env.sim.reset()
     env.reset()
     
-    
+
     
     # create simplified control configuration
     try:    
@@ -231,7 +235,7 @@ def main():
         controller.set_profiling(False)
         print("performance analysis disabled")
 
-    
+
     # set signal handlers
     setup_signal_handlers(controller)
     print("Note: The DDS in Sim transmits messages on channel 1. Please ensure that other DDS instances use the same channel for message exchange by setting: ChannelFactoryInitialize(1).")
