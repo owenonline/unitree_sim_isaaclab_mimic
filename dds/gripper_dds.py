@@ -209,6 +209,7 @@ class GripperDDS(BaseDDSNode):
             right_velocities: the list or torch.Tensor of the right hand joint velocities
             right_torques: the list or torch.Tensor of the right hand joint torques
         """
+        
         try:
             # prepare the left hand data
             left_hand_data = {
