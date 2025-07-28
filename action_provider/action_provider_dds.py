@@ -144,8 +144,12 @@ class DDSActionProvider(ActionProvider):
             # Get gripper command
             if self.gripper_dds:
                 gripper_cmd = self.gripper_dds.get_gripper_command()
-                if gripper_cmd and 'positions' in gripper_cmd:
-                    gripper_positions = gripper_cmd['positions']
+                if gripper_cmd:
+                    left_gripper_cmd = gripper_cmd.get('left_gripper_cmd', {})
+                    right_gripper_cmd = gripper_cmd.get('right_gripper_cmd', {})
+                    left_gripper_positions = left_gripper_cmd.get('positions', [])
+                    right_gripper_positions = right_gripper_cmd.get('positions', [])
+                    gripper_positions = right_gripper_positions + left_gripper_positions
                     # print(f"gripper_positions: {gripper_positions}")
                     if len(gripper_positions) >= 2:
                         for joint_name, gripper_idx in self.gripper_joint_mapping.items():

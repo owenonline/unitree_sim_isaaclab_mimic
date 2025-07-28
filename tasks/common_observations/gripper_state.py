@@ -108,8 +108,14 @@ def get_robot_gipper_joint_states(
                     pos = gripper_positions[0].cpu().numpy()
                     vel = gripper_velocities[0].cpu().numpy()
                     torque = gripper_torques[0].cpu().numpy()
+                    right_pos = pos[:1]
+                    left_pos = pos[1:]
+                    right_vel = vel[:1]
+                    left_vel = vel[1:]
+                    right_torque = torque[:1]
+                    left_torque = torque[1:]
                     # write the gripper state to shared memory
-                    gripper_dds.write_gripper_state(pos, vel, torque)
+                    gripper_dds.write_gripper_state(left_pos, left_vel, left_torque, right_pos, right_vel, right_torque)
             except Exception as e:
                 print(f"[gripper_state] Failed to write to shared memory: {e}")
         

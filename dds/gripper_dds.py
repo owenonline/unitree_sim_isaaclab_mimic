@@ -41,13 +41,12 @@ class GripperDDS(BaseDDSNode):
         super().__init__("GripperDDS")
         
         # initialize the gripper state message (2 grippers)
-        self.gripper_state = MotorStates_()
-        # initialize 2 motor states
-        self.gripper_state.states = []
-        for _ in range(2):
+        self.left_gripper_state = MotorStates_()
+        self.right_gripper_state = MotorStates_()
+        for i in range(1):
             motor_state = unitree_go_msg_dds__MotorState_()
-            self.gripper_state.states.append(motor_state)
-        
+            self.left_gripper_state.states.append(motor_state)
+            self.right_gripper_state.states.append(motor_state)
         self._initialized = True
         
         # setup the shared memory
@@ -63,9 +62,11 @@ class GripperDDS(BaseDDSNode):
     def setup_publisher(self) -> bool:
         """Setup the publisher of the gripper"""
         try:
-            self.publisher = ChannelPublisher("rt/unitree_actuator/state", MotorStates_)
-            self.publisher.Init()
-            
+            self.left_gripper_state_publisher = ChannelPublisher("rt/dex1/left/state", MotorStates_)
+            self.left_gripper_state_publisher.Init()
+            self.right_gripper_state_publisher = ChannelPublisher("rt/dex1/right/state", MotorStates_)
+            self.right_gripper_state_publisher.Init()
+            self.publisher=True
             print(f"[{self.node_name}] Gripper state publisher initialized")
             return True
         except Exception as e:
@@ -75,15 +76,34 @@ class GripperDDS(BaseDDSNode):
     def setup_subscriber(self) -> bool:
         """Setup the subscriber of the gripper"""
         try:
-            self.subscriber = ChannelSubscriber("rt/unitree_actuator/cmd", MotorCmds_)
-            self.subscriber.Init(self._subscribe_message_handler, 1)
-            
+            self.left_gripper_cmd_subscriber = ChannelSubscriber("rt/dex1/left/cmd", MotorCmds_)
+            self.left_gripper_cmd_subscriber.Init(lambda msg: self.subscribe_message_handler(msg, "left"), 1)
+            self.right_gripper_cmd_subscriber = ChannelSubscriber("rt/dex1/right/cmd", MotorCmds_)
+            self.right_gripper_cmd_subscriber.Init(lambda msg: self.subscribe_message_handler(msg, "right"), 1)
+            self.subscriber = True
             print(f"[{self.node_name}] Gripper command subscriber initialized")
             return True
         except Exception as e:
             print(f"gripper_dds [{self.node_name}] Gripper command subscriber initialization failed: {e}")
             return False
-    
+    def process_subscribe_data(self, msg: Any) -> Dict[str, Any]:
+        return {}
+    def subscribe_message_handler(self, msg: Any, hand_side: str):
+        """Subscribe message handler"""
+        try:
+            # process received message
+            data = self._process_subscribe_data(msg, hand_side)
+            if data and self.output_shm:
+                # write to shared memory
+                existing_data = self.output_shm.read_data() or {}
+                existing_data[f"{hand_side}_gripper_cmd"] = data
+                self.output_shm.write_data(existing_data)
+                
+            # call callback function
+            if self.subscribe_callback:
+                self.subscribe_callback(msg, data)
+        except Exception as e:
+            print(f"gripper_dds [{self.node_name}] Error processing subscribe message: {e}")
     def process_publish_data(self, data: Dict[str, Any]) -> Any:
         """Process the publish data: convert the Isaac Lab state to the DDS message
         
@@ -95,27 +115,41 @@ class GripperDDS(BaseDDSNode):
         }
         """
         try:
-            if all(key in data for key in ["positions", "velocities", "torques"]):
-                positions = data["positions"]
-                velocities = data["velocities"]
-                torques = data["torques"]
-                for i in range(min(2, len(positions))):
-                    if i < len(self.gripper_state.states):
-                        # convert the Isaac Lab joint angle to the gripper control value    
-                        gripper_value = self.convert_to_gripper_range(float(positions[i]))
-                        self.gripper_state.states[i].q = gripper_value
-                        if i < len(velocities):
-                            self.gripper_state.states[i].dq = float(velocities[i])
-                        if i < len(torques):
-                            self.gripper_state.states[i].tau_est = float(torques[i])
+            # process the left hand data
+            if "left_hand" in data:
+                left_data = data["left_hand"]
+                self._update_gripper_state(self.left_gripper_state, left_data)
+                if self.left_gripper_state_publisher:
+                    self.left_gripper_state_publisher.Write(self.left_gripper_state)
             
-            return self.gripper_state
-            
+            # process the right hand data
+            if "right_hand" in data:
+                right_data = data["right_hand"]
+                self._update_gripper_state(self.right_gripper_state, right_data)
+                if self.right_gripper_state_publisher:
+                    self.right_gripper_state_publisher.Write(self.right_gripper_state)
+
+            return None
         except Exception as e:
             print(f"gripper_dds [{self.node_name}] Error processing publish data: {e}")    
             return None
-    
-    def process_subscribe_data(self, msg: MotorCmds_) -> Dict[str, Any]:
+    def _update_gripper_state(self, gripper_state, gripper_data: Dict[str, Any]):
+        """Update the gripper state"""
+        try:
+            if all(key in gripper_data for key in ["positions", "velocities", "torques"]):
+                positions = gripper_data["positions"]
+                velocities = gripper_data["velocities"]
+                torques = gripper_data["torques"]
+                for i in range(min(1, len(positions))):  # at most 2 grippers
+                    if i < len(positions):
+                        gripper_state.states[i].q = self.convert_to_gripper_range(float(positions[i]))
+                    if i < len(velocities):
+                        gripper_state.states[i].dq = float(velocities[i])
+                    if i < len(torques):
+                        gripper_state.states[i].tau_est = float(torques[i])
+        except Exception as e:
+            print(f"gripper_dds [{self.node_name}] Error updating gripper state: {e}")
+    def _process_subscribe_data(self, msg: Any, hand_side: str) -> Dict[str, Any]:
         """Process the subscribe data: convert the DDS command to the Isaac Lab format
         
         Returns:
@@ -137,7 +171,7 @@ class GripperDDS(BaseDDSNode):
                 "kd": []
             }
             # process the gripper command (at most 2 grippers)
-            for i in range(min(2, len(msg.cmds))):
+            for i in range(min(1, len(msg.cmds))):
                 # convert the gripper control value to the Isaac Lab joint angle
                 joint_angle = self.convert_to_joint_range(float(msg.cmds[i].q))
                 
@@ -150,7 +184,7 @@ class GripperDDS(BaseDDSNode):
             return cmd_data
             
         except Exception as e:
-            print(f"gripper_dds [{self.node_name}] Error processing subscribe data: {e}")
+            print(f"gripper_dds [{self.node_name}] Error processing {hand_side} subscribe data: {e}")
             return {}
     
     def get_gripper_command(self) -> Optional[Dict[str, Any]]:
@@ -163,29 +197,57 @@ class GripperDDS(BaseDDSNode):
             return self.output_shm.read_data()
         return None
     
-    def write_gripper_state(self, positions, velocities, torques):
-        """Write the gripper state to the shared memory
+    def write_gripper_state(self, left_positions, left_velocities, left_torques, 
+                        right_positions, right_velocities, right_torques):
+        """Write the hand states to the shared memory directly
         
         Args:
-            positions: the gripper joint position list or torch.Tensor (Isaac Lab joint angle)
-            velocities: the gripper joint velocity list or torch.Tensor  
-            torques: the gripper joint torque list or torch.Tensor
+            left_positions: the list or torch.Tensor of the left hand joint positions
+            left_velocities: the list or torch.Tensor of the left hand joint velocities
+            left_torques: the list or torch.Tensor of the left hand joint torques
+            right_positions: the list or torch.Tensor of the right hand joint positions
+            right_velocities: the list or torch.Tensor of the right hand joint velocities
+            right_torques: the list or torch.Tensor of the right hand joint torques
         """
         try:
-            # prepare the gripper data
-            gripper_data = {
-                "positions": positions.tolist() if hasattr(positions, 'tolist') else positions,
-                "velocities": velocities.tolist() if hasattr(velocities, 'tolist') else velocities,
-                "torques": torques.tolist() if hasattr(torques, 'tolist') else torques
+            # prepare the left hand data
+            left_hand_data = {
+                "positions": left_positions.tolist() if hasattr(left_positions, 'tolist') else left_positions,
+                "velocities": left_velocities.tolist() if hasattr(left_velocities, 'tolist') else left_velocities,
+                "torques": left_torques.tolist() if hasattr(left_torques, 'tolist') else left_torques
             }
             
-            # write the input shared memory for publishing
+            # prepare the right hand data
+            right_hand_data = {
+                "positions": right_positions.tolist() if hasattr(right_positions, 'tolist') else right_positions,
+                "velocities": right_velocities.tolist() if hasattr(right_velocities, 'tolist') else right_velocities,
+                "torques": right_torques.tolist() if hasattr(right_torques, 'tolist') else right_torques
+            }
+            
+            # publish the states
+            self.publish_hand_states(left_hand_data, right_hand_data)
+            
+        except Exception as e:
+            print(f"dex3_dds [{self.node_name}] Error writing hand states: {e}")
+    def publish_hand_states(self, left_hand_data: Dict[str, Any], right_hand_data: Dict[str, Any]):
+        """Publish the left and right hand states
+        
+        Args:
+            left_hand_data: the data of the left hand
+            right_hand_data: the data of the right hand
+        """
+        try:
+            combined_data = {
+                "left_hand": left_hand_data,
+                "right_hand": right_hand_data
+            }
+            
+            # write to the input shared memory for publishing
             if self.input_shm:
-                self.input_shm.write_data(gripper_data)
+                self.input_shm.write_data(combined_data)
                 
         except Exception as e:
-            print(f"gripper_dds [{self.node_name}] Error writing gripper state: {e}")
-    
+            print(f"dex3_dds [{self.node_name}] Error publishing hand states: {e}")
     def convert_to_joint_range(self, value):
         """Convert the command value to the Isaac Lab joint angle [5.6, 0] -> [-0.02, 0.03]
         
@@ -265,6 +327,7 @@ class GripperDDS(BaseDDSNode):
                     if self.setup_publisher():
                         if not self.publish_thread or not self.publish_thread.is_alive():
                             import threading
+                            
                             self.publish_thread = threading.Thread(target=self._publish_loop)
                             self.publish_thread.daemon = True
                             self.publish_thread.start()
@@ -276,6 +339,7 @@ class GripperDDS(BaseDDSNode):
                     if self.setup_subscriber():
                         if not self.subscribe_thread or not self.subscribe_thread.is_alive():
                             import threading
+                            
                             self.subscribe_thread = threading.Thread(target=self._subscribe_loop)
                             self.subscribe_thread.daemon = True
                             self.subscribe_thread.start()
