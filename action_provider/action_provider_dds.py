@@ -21,7 +21,6 @@ class DDSActionProvider(ActionProvider):
         self.inspire_dds = None
         self._setup_dds()
         self._setup_joint_mapping()
-        
     
     def _setup_dds(self):
         """Setup DDS communication"""
