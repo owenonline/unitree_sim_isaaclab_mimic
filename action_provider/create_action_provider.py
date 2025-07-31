@@ -11,18 +11,12 @@ def create_action_provider(env,args):
     if args.action_source == "dds":
         return DDSActionProvider(
             env=env,
-            robot_type=args.robot_type,
-            enable_gripper=args.enable_gripper_dds, 
-            enable_dex3=args.enable_dex3_dds,
-            enable_inspire=args.enable_inspire_dds
+            args_cli=args
         )
     elif args.action_source == "dds_wholebody":
         return DDSWholebodyActionProvider(
             env=env,
-            robot_type=args.robot_type,
-            enable_gripper=args.enable_gripper_dds, 
-            enable_dex3=args.enable_dex3_dds,
-            enable_inspire=args.enable_inspire_dds
+            args_cli=args
         )
     elif args.action_source == "trajectory":
         trajectory_gen = create_trajectory_generator()
@@ -33,12 +27,7 @@ def create_action_provider(env,args):
         print("policy mode not implemented")
         return None
     elif args.action_source == "replay":
-        return FileActionProviderReplay(             
-                                        env=env,
-                                        robot_type=args.robot_type,
-                                        enable_gripper=args.enable_gripper_dds, 
-            enable_dex3=args.enable_dex3_dds,generate_data=args.generate_data,generate_data_dir=args.generate_data_dir,rerun_log=args.rerun_log)
-    
+        return FileActionProviderReplay(env=env,args_cli=args)
     else:
         print(f"unknown action source: {args.action_source}")
         return None

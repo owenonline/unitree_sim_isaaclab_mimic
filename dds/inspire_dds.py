@@ -7,13 +7,13 @@ Handle the state publishing and command receiving of the gripper
 
 import threading
 from typing import Any, Dict, Optional
-from dds.dds_base import BaseDDSNode, node_manager
+from dds.dds_base import DDSObject
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import MotorCmds_, MotorStates_
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__MotorCmd_, unitree_go_msg_dds__MotorState_
 import numpy as np
 
-class InspireDDS(BaseDDSNode):
+class InspireDDS(DDSObject):
     """Gripper DDS communication class - singleton pattern
     
     Features:
@@ -21,24 +21,14 @@ class InspireDDS(BaseDDSNode):
     - Receive the control command of the gripper (rt/unitree_actuator/cmd)
     """
     
-    _instance = None
-    _lock = threading.Lock()
-    
-    def __new__(cls):
-        """Singleton pattern implementation"""
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(InspireDDS, cls).__new__(cls)
-        return cls._instance
-    
-    def __init__(self):
+    def __init__(self,node_name:str="inspire"):
         """Initialize the gripper DDS node"""
         # avoid duplicate initialization
         if hasattr(self, '_initialized'):
             return
             
-        super().__init__("InspireDDS")
+        super().__init__()
+        self.node_name = node_name
         
         # initialize the gripper state message (2 grippers)
         self.inspire_hand_state = MotorStates_()
@@ -76,7 +66,7 @@ class InspireDDS(BaseDDSNode):
         """Setup the subscriber of the gripper"""
         try:
             self.subscriber = ChannelSubscriber("rt/inspire/cmd", MotorCmds_)
-            self.subscriber.Init(self._subscribe_message_handler, 1)
+            self.subscriber.Init(lambda msg: self.dds_subscriber(msg, ""), 1)
             
             print(f"[{self.node_name}] Inspire Hand command subscriber initialized")
             return True
@@ -85,7 +75,7 @@ class InspireDDS(BaseDDSNode):
             return False
     def normalize(self,val, min_val, max_val):
         return np.clip((max_val - val) / (max_val - min_val), 0.0, 1.0)
-    def process_publish_data(self, data: Dict[str, Any]) -> Any:
+    def dds_publisher(self) -> Any:
         """Process the publish data: convert the Isaac Lab state to the DDS message
         
         Expected data format:
@@ -96,6 +86,9 @@ class InspireDDS(BaseDDSNode):
         }
         """
         try:
+            data = self.input_shm.read_data() 
+            if data is None:
+                return
             if all(key in data for key in ["positions", "velocities", "torques"]):
                 positions = data["positions"]
                 velocities = data["velocities"]
@@ -115,14 +108,14 @@ class InspireDDS(BaseDDSNode):
                         if i < len(torques):
                             self.inspire_hand_state.states[i].tau_est = float(torques[i])
             
-            return self.inspire_hand_state
+                self.publisher.Write(self.inspire_hand_state)
             
         except Exception as e:
             print(f"inspire_dds [{self.node_name}] Error processing publish data: {e}")    
             return None
     def denormalize(self,norm_val, min_val, max_val):
         return (1.0 - np.clip(norm_val, 0.0, 1.0)) * (max_val - min_val) + min_val
-    def process_subscribe_data(self, msg: MotorCmds_) -> Dict[str, Any]:
+    def dds_subscriber(self, msg: MotorCmds_,datatype:str=None) -> Dict[str, Any]:
         """Process the subscribe data: convert the DDS command to the Isaac Lab format
         
         Returns:
@@ -157,11 +150,11 @@ class InspireDDS(BaseDDSNode):
                 cmd_data["torques"].append(float(msg.cmds[i].tau))
                 cmd_data["kp"].append(float(msg.cmds[i].kp))
                 cmd_data["kd"].append(float(msg.cmds[i].kd))
-            return cmd_data
+            self.output_shm.write_data(cmd_data)
             
         except Exception as e:
             print(f"inspire_dds [{self.node_name}] Error processing subscribe data: {e}")
-            return {}
+            return None
     
     def get_inspire_hand_command(self) -> Optional[Dict[str, Any]]:
         """Get the gripper control command
@@ -195,138 +188,3 @@ class InspireDDS(BaseDDSNode):
                 
         except Exception as e:
             print(f"gripper_dds [{self.node_name}] Error writing inspire hand state: {e}")
-    
-
-
-
-    
-    def start_communication(self, enable_publish: bool = True, enable_subscribe: bool = True):
-        """Start the gripper DDS communication
-        
-        Args:
-            enable_publish: whether to enable the publish function (publish the gripper state)
-            enable_subscribe: whether to enable the subscribe function (receive the gripper control command)
-        """
-        try:
-            # register the node
-            node_manager.register_node(self)
-            
-            # if the node is already running, dynamically add new features
-            if self.running:
-                print(f"[{self.node_name}] Node is already running, dynamically add features...")
-                
-                # if the publish function is enabled but the publisher is not set, then set the publisher
-                if enable_publish and not self.publisher:
-                    print(f"[{self.node_name}] Add publish function...")
-                    if self.setup_publisher():
-                        if not self.publish_thread or not self.publish_thread.is_alive():
-                            import threading
-                            self.publish_thread = threading.Thread(target=self._publish_loop)
-                            self.publish_thread.daemon = True
-                            self.publish_thread.start()
-                            print(f"[{self.node_name}] Publish thread started")
-                
-                # if the subscribe function is enabled but the subscriber is not set, then set the subscriber
-                if enable_subscribe and not self.subscriber:
-                    print(f"[{self.node_name}] Add subscribe function...")
-                    if self.setup_subscriber():
-                        if not self.subscribe_thread or not self.subscribe_thread.is_alive():
-                            import threading
-                            self.subscribe_thread = threading.Thread(target=self._subscribe_loop)
-                            self.subscribe_thread.daemon = True
-                            self.subscribe_thread.start()
-                            print(f"[{self.node_name}] Subscribe thread started")
-            else:
-                # the node is not running, start normally
-                self.start(enable_publish=enable_publish, enable_subscribe=enable_subscribe)
-            
-            status_msg = f"[{self.node_name}] Inspire Hand DDS communication started"
-            if enable_publish and enable_subscribe:
-                status_msg += " (publish + subscribe)"
-            elif enable_publish:
-                status_msg += " (publish only)"
-            elif enable_subscribe:
-                status_msg += " (subscribe only)"
-            else:
-                status_msg += " (no function enabled)"
-            
-            print(status_msg)
-            
-        except Exception as e:
-            print(f"inspire_dds [{self.node_name}] Failed to start communication: {e}")
-    
-    def stop_communication(self):
-        """Stop the gripper DDS communication"""
-        try:
-            self.stop()
-            print(f"[{self.node_name}] Inspire Hand DDS communication stopped")  
-        except Exception as e:
-            print(f"inspire_dds [{self.node_name}] Failed to stop communication: {e}")
-    
-    @classmethod
-    def get_instance(cls) -> 'InspireDDS':
-        """Get the singleton instance"""
-        return cls()
-
-
-# convenient functions
-def get_inspire_dds() -> InspireDDS:
-    """Get the inspire hand DDS instance"""
-    return InspireDDS.get_instance()
-
-
-def start_inspire_hand_communication(enable_publish: bool = True, enable_subscribe: bool = True):
-    """Start the inspire hand DDS communication
-    
-    Args:
-        enable_publish: whether to enable the publish function (publish the inspire hand state)
-        enable_subscribe: whether to enable the subscribe function (receive the inspire hand control command)
-    
-    Returns:
-        InspireDDS: the DDS instance
-    """
-    inspire_dds = get_inspire_dds()
-    inspire_dds.start_communication(enable_publish=enable_publish, enable_subscribe=enable_subscribe)
-    return inspire_dds
-
-
-def start_inspire_hand_publisher_only():
-    """Start the inspire hand state publish function only
-    
-    Applicable scenarios: only need to publish the inspire hand state, no need to receive the external control command
-    """
-    return start_inspire_hand_communication(enable_publish=True, enable_subscribe=False)
-
-
-def start_inspire_hand_subscriber_only():
-    """Start the gripper command subscribe function only
-    
-    Applicable scenarios: only need to receive the external control command, no need to publish the gripper state
-    """
-    return start_inspire_hand_communication(enable_publish=False, enable_subscribe=True)
-
-
-def stop_inspire_hand_communication():
-    """Stop the gripper DDS communication"""
-    inspire_dds = get_inspire_dds()
-    inspire_dds.stop_communication()
-
-
-if __name__ == "__main__":
-    # test the singleton pattern
-    dds1 = InspireDDS()
-    dds2 = InspireDDS()
-    print(f"Singleton test: {dds1 is dds2}")  # should be True
-    
-    # start the communication
-    try:
-        start_inspire_hand_communication()
-        
-        import time
-        while True:
-            time.sleep(1)
-            
-    except KeyboardInterrupt:
-        print("Program interrupted...")
-    finally:
-        stop_inspire_hand_communication() 

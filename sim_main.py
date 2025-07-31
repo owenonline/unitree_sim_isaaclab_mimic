@@ -21,21 +21,22 @@ from pathlib import Path
 from isaaclab.app import AppLauncher
 
 from image_server.image_server import ImageServer
-
+from dds.dds_create import create_dds_objects,create_dds_objects_replay
 # add command line arguments
 parser = argparse.ArgumentParser(description="Unitree Simulation")
 parser.add_argument("--task", type=str, default="Isaac-PickPlace-G129-Head-Waist-Fix", help="task name")
 parser.add_argument("--action_source", type=str, default="dds", 
                    choices=["dds", "file", "trajectory", "policy", "replay","dds_wholebody"], 
                    help="Action source")
-parser.add_argument("--file_path", type=str, default="./data", help="file path (when action_source=file)")
+
 
 parser.add_argument("--robot_type", type=str, default="g129", help="robot type")
-parser.add_argument("--enable_gripper_dds", action="store_true", help="enable gripper DDS")
+parser.add_argument("--enable_dex1_dds", action="store_true", help="enable gripper DDS")
 parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexterous hand DDS")
 parser.add_argument("--enable_inspire_dds", action="store_true", help="enable inspire hand DDS")
 parser.add_argument("--stats_interval", type=float, default=10.0, help="statistics print interval (seconds)")
 
+parser.add_argument("--file_path", type=str, default="xr_teleoperate/teleop/utils/data", help="file path (when action_source=file)")
 parser.add_argument("--generate_data_dir", type=str, default="./data", help="save data dir")
 parser.add_argument("--generate_data", action="store_true", default=False, help="generate data")
 parser.add_argument("--rerun_log", action="store_true", default=False, help="rerun log")
@@ -55,8 +56,8 @@ AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 
 
-if args_cli.enable_dex3_dds and args_cli.enable_gripper_dds and args_cli.enable_inspire_dds:
-    print("Error: enable_dex3_dds and enable_gripper_dds and enable_inspire_dds cannot be enabled at the same time")
+if args_cli.enable_dex3_dds and args_cli.enable_dex1_dds and args_cli.enable_inspire_dds:
+    print("Error: enable_dex3_dds and enable_dex1_dds and enable_inspire_dds cannot be enabled at the same time")
     print("Please select one of the options")
     sys.exit(1)
 
@@ -70,7 +71,7 @@ from layeredcontrol.robot_control_system import (
     ControlConfig,
 )
 
-from dds.reset_pose_dds import get_reset_pose_dds
+from dds.reset_pose_dds import *
 import tasks
 from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
 
@@ -80,12 +81,12 @@ from tools.augmentation_utils import (
 )
 
 from tools.data_json_load import sim_state_to_json
-from dds.sim_state_dds import get_sim_state_dds
+from dds.sim_state_dds import *
 from action_provider.create_action_provider import create_action_provider
 
 
 
-def setup_signal_handlers(controller):
+def setup_signal_handlers(controller,dds_manager=None):
     """set signal handlers"""
     def signal_handler(signum, frame):
         print(f"\nreceived signal {signum}, stopping controller...")
@@ -93,7 +94,11 @@ def setup_signal_handlers(controller):
             controller.stop()
         except Exception as e:
             print(f"Failed to stop controller: {e}")
-
+        try:
+            if dds_manager is not None:
+                dds_manager.stop_all_communication()
+        except Exception as e:
+            print(f"Failed to stop DDS: {e}")
     
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -193,15 +198,19 @@ def main():
         print("========= create image server success =========")
         print("========= create dds =========")
         try:
-            reset_pose_dds = get_reset_pose_dds()
-            reset_pose_dds.start_communication(enable_publish=False, enable_subscribe=True)
-            sim_state_dds = get_sim_state_dds(env,args_cli.task)
-            sim_state_dds.start_communication(enable_publish=True, enable_subscribe=False)
+            reset_pose_dds,sim_state_dds,dds_manager = create_dds_objects(args_cli,env)
         except Exception as e:
             print(f"Failed to create dds: {e}")
             return
         print("========= create dds success =========")
     else:
+        print("========= create dds =========")
+        try:
+            create_dds_objects_replay(args_cli,env)
+        except Exception as e:
+            print(f"Failed to create dds: {e}")
+            return
+        print("========= create dds success =========")
         from tools.data_json_load import get_data_json_list
         print("========= get data json list =========")
         data_idx=0
@@ -237,7 +246,10 @@ def main():
 
 
     # set signal handlers
-    setup_signal_handlers(controller)
+    if not args_cli.replay_data:
+        setup_signal_handlers(controller,dds_manager)
+    else:
+        setup_signal_handlers(controller)
     print("Note: The DDS in Sim transmits messages on channel 1. Please ensure that other DDS instances use the same channel for message exchange by setting: ChannelFactoryInitialize(1).")
     try:
         # start controller - start asynchronous components
@@ -285,7 +297,7 @@ def main():
                             raise ValueError(f" The {task_name} in the dataset is different from the {args_cli.task} being executed .")
                         env.reset_to(sim_state, torch.tensor([0], device=env.device), is_relative=True)
                         env.sim.reset()
-                        time.sleep(0.2)
+                        time.sleep(1)
                         action_provider.start_replay()
                         data_idx+=1
                 # print(f"env_state: {env_state}")
@@ -415,15 +427,15 @@ if __name__ == "__main__":
         # Force exit
         os._exit(0)
 
-# python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_gripper_dds --robot_type g129
+# python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_dex1_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-Cylinder-G129-Dex3-Joint    --enable_dex3_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-Cylinder-G129-Inspire-Joint    --enable_inspire_dds --robot_type g129
 
-# python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-RedBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-RedBlock-G129-Dex1-Joint     --enable_dex1_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-RedBlock-G129-Dex3-Joint    --enable_dex3_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-RedBlock-G129-Inspire-Joint    --enable_inspire_dds --robot_type g129
 
 
-# python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_dex1_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex3-Joint     --enable_dex3_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Inspire-Joint     --enable_inspire_dds --robot_type g129

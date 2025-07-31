@@ -7,13 +7,13 @@ Handle the state publishing and command receiving of the hand (left and right)
 
 import threading
 from typing import Any, Dict, Optional, Tuple
-from dds.dds_base import BaseDDSNode, node_manager
+from dds.dds_base import DDSObject
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber
 from unitree_sdk2py.idl.unitree_hg.msg.dds_ import HandState_, HandCmd_
 from unitree_sdk2py.idl.default import unitree_hg_msg_dds__HandState_, unitree_hg_msg_dds__HandCmd_
 
 
-class Dex3DDS(BaseDDSNode):
+class Dex3DDS(DDSObject):
     """Hand DDS communication class - singleton pattern
     
     Features:
@@ -21,24 +21,14 @@ class Dex3DDS(BaseDDSNode):
     - Receive the control command of the hand (rt/dex3/left/cmd, rt/dex3/right/cmd)
     """
     
-    _instance = None
-    _lock = threading.Lock()
-    
-    def __new__(cls):
-        """Singleton pattern implementation"""
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(Dex3DDS, cls).__new__(cls)
-        return cls._instance
-    
-    def __init__(self):
+    def __init__(self,node_name:str="dex3"):
         """Initialize the hand DDS node"""
         # avoid duplicate initialization
         if hasattr(self, '_initialized'):
             return
             
-        super().__init__("Dex3DDS")
+        super().__init__()
+        self.node_name = node_name
         
         # initialize the state message of the hand
         self.left_hand_state = unitree_hg_msg_dds__HandState_()
@@ -85,13 +75,13 @@ class Dex3DDS(BaseDDSNode):
             # left hand command subscriber
             self.left_cmd_subscriber = ChannelSubscriber("rt/dex3/left/cmd", HandCmd_)
             self.left_cmd_subscriber.Init(
-                lambda msg: self._handle_hand_command(msg, "left"), 1
+                lambda msg: self.dds_subscriber(msg, "left"), 1
             )
             
             # right hand command subscriber
             self.right_cmd_subscriber = ChannelSubscriber("rt/dex3/right/cmd", HandCmd_)
             self.right_cmd_subscriber.Init(
-                lambda msg: self._handle_hand_command(msg, "right"), 1
+                lambda msg: self.dds_subscriber(msg, "right"), 1
             )
             
             print(f"[{self.node_name}] Hand command subscriber initialized")
@@ -100,20 +90,20 @@ class Dex3DDS(BaseDDSNode):
             print(f"dex3_dds [{self.node_name}] Hand command subscriber initialization failed: {e}")
             return False
     
-    def _handle_hand_command(self, msg: HandCmd_, hand_side: str):
+    def dds_subscriber(self, msg: HandCmd_, datatype:str=None):
         """Handle the command of the hand"""
         try:
             # process the command of the hand and write to the shared memory
-            cmd_data = self._process_hand_command(msg, hand_side)
+            cmd_data = self.process_hand_command(msg, datatype)
             if cmd_data and self.output_shm:
                 # read the existing data or create new data
                 existing_data = self.output_shm.read_data() or {}
-                existing_data[f"{hand_side}_hand_cmd"] = cmd_data
+                existing_data[f"{datatype}_hand_cmd"] = cmd_data
                 self.output_shm.write_data(existing_data)
         except Exception as e:
-            print(f"dex3_dds [{self.node_name}] Error handling {hand_side} hand command: {e}")
+            print(f"dex3_dds [{self.node_name}] Error handling {datatype} hand command: {e}")
     
-    def _process_hand_command(self, msg: HandCmd_, hand_side: str) -> Dict[str, Any]:
+    def process_hand_command(self, msg: HandCmd_, datatype:str=None) -> Dict[str, Any]:
         """Process the command of the hand"""
         try:
             cmd_data = {
@@ -125,10 +115,10 @@ class Dex3DDS(BaseDDSNode):
             }
             return cmd_data
         except Exception as e:
-            print(f"dex3_dds [{self.node_name}] Error processing {hand_side} hand command data: {e}")
+            print(f"dex3_dds [{self.node_name}] Error processing {datatype} hand command data: {e}")
             return {}
     
-    def process_publish_data(self, data: Dict[str, Any]) -> Any:
+    def dds_publisher(self) -> Any:
         """Process the publish data: convert the hand state of Isaac Lab to DDS message
         
         Expected data format:
@@ -146,6 +136,8 @@ class Dex3DDS(BaseDDSNode):
         }
         """
         try:
+            data = self.input_shm.read_data() or {}
+            
             # process the left hand data
             if "left_hand" in data:
                 left_data = data["left_hand"]
@@ -159,10 +151,6 @@ class Dex3DDS(BaseDDSNode):
                 self._update_hand_state(self.right_hand_state, right_data)
                 if self.right_state_publisher:
                     self.right_state_publisher.Write(self.right_hand_state)
-            
-            # since we need to publish to two different topics, handle the publishing here
-            # return None to tell the base class not to publish again
-            return None
         except Exception as e:
             print(f"dex3_dds [{self.node_name}] Error processing publish data: {e}")
             return None
@@ -185,9 +173,7 @@ class Dex3DDS(BaseDDSNode):
         except Exception as e:
             print(f"dex3_dds [{self.node_name}] Error updating hand state: {e}")
     
-    def process_subscribe_data(self, msg: Any) -> Dict[str, Any]:
-        """This method is handled by _handle_hand_command, not directly used"""
-        return {}
+
     
     def get_hand_commands(self) -> Optional[Dict[str, Any]]:
         """Get the hand control commands
@@ -303,188 +289,3 @@ class Dex3DDS(BaseDDSNode):
         except Exception as e:
             print(f"dex3_dds [{self.node_name}] Error writing {hand_side} hand state: {e}")
     
-    
-    def start(self, enable_publish: bool = True, enable_subscribe: bool = True):
-        """Rewrite the start method to handle multiple publishers and subscribers"""
-        if self.running:
-            print(f"[{self.node_name}] Node already running")
-            return
-        
-        try:
-            # initialize DDS (only initialize once globally)
-            from dds.dds_base import dds_init_manager
-            if not dds_init_manager.initialize():
-                print(f"[{self.node_name}] Failed to initialize DDS factory")
-                return
-            
-            # setup the publisher
-            if enable_publish:
-                if not self.setup_publisher():
-                    print(f"[{self.node_name}] Failed to setup publisher")
-                    return
-            
-            # setup the subscriber  
-            if enable_subscribe:
-                print(f"[{self.node_name}] Setting up subscriber...")
-                if not self.setup_subscriber():
-                    print(f"[{self.node_name}] Failed to setup subscriber")
-                    return
-                else:
-                    print(f"[{self.node_name}] Subscriber setup successfully")
-            
-            self.running = True
-            
-            # start the publish thread (check if there is any publisher)
-            if enable_publish and (self.left_state_publisher or self.right_state_publisher):
-                self.publisher=True
-                self.publish_thread = threading.Thread(target=self._publish_loop)
-                self.publish_thread.daemon = True
-                self.publish_thread.start()
-
-            # start the subscribe thread (check if there is any subscriber)
-            if enable_subscribe and (self.left_cmd_subscriber or self.right_cmd_subscriber):
-                self.subscriber = True
-                print(f"[{self.node_name}] Starting subscribe thread...")
-                self.subscribe_thread = threading.Thread(target=self._subscribe_loop)
-                self.subscribe_thread.daemon = True
-                self.subscribe_thread.start()
-                print(f"[{self.node_name}] Subscribe thread started")
-            elif enable_subscribe:
-                print(f"[{self.node_name}] Warning: subscriber is empty, cannot start subscribe thread")
-            
-            print(f"[{self.node_name}] Node started successfully")
-            
-        except Exception as e:
-            print(f"[{self.node_name}] Failed to start node: {e}")
-            self.stop()
-    
-    def start_communication(self, enable_publish: bool = True, enable_subscribe: bool = True):
-        """Start the hand DDS communication
-        
-        Args:
-            enable_publish: whether to enable the publish function (publish the left and right hand states)
-            enable_subscribe: whether to enable the subscribe function (receive the left and right hand control commands)
-        """
-        try:
-            # register the node
-            node_manager.register_node(self)
-            
-            # if the node is already running, dynamically add new features
-            if self.running:
-                print(f"[{self.node_name}] Node is already running, dynamically add features...")
-                # if the publish function is enabled but the publisher is not set, then set the publisher
-                if enable_publish and not self.left_state_publisher and not self.right_state_publisher:
-                    print(f"[{self.node_name}] Add publish function...")
-                    if self.setup_publisher():
-                        if not self.publish_thread or not self.publish_thread.is_alive():
-                            import threading
-                            self.publisher=True
-                            self.publish_thread = threading.Thread(target=self._publish_loop)
-                            self.publish_thread.daemon = True
-                            self.publish_thread.start()
-                            print(f"[{self.node_name}] Publish thread started")
-                
-                # if the subscribe function is enabled but the subscriber is not set, then set the subscriber
-                if enable_subscribe and not self.left_cmd_subscriber and not self.right_cmd_subscriber:
-                    print(f"[{self.node_name}] Add subscribe function...")
-                    if self.setup_subscriber():
-                        if not self.subscribe_thread or not self.subscribe_thread.is_alive():
-                            self.subscriber = True
-                            import threading
-                            self.subscribe_thread = threading.Thread(target=self._subscribe_loop)
-                            self.subscribe_thread.daemon = True
-                            self.subscribe_thread.start()
-                            print(f"[{self.node_name}] Subscribe thread started")
-            else:
-                # the node is not running, start normally
-                self.start(enable_publish=enable_publish, enable_subscribe=enable_subscribe)
-            
-            status_msg = f"[{self.node_name}] Hand DDS communication started"
-            if enable_publish and enable_subscribe:
-                status_msg += " (publish + subscribe)"
-            elif enable_publish:
-                status_msg += " (publish only)"
-            elif enable_subscribe:
-                status_msg += " (subscribe only)"
-            else:
-                status_msg += " (no function enabled)"
-            
-            print(status_msg)
-            
-        except Exception as e:
-            print(f"[{self.node_name}] Failed to start communication: {e}")
-    
-    def stop_communication(self):
-        """Stop the hand DDS communication"""
-        try:
-            self.stop()
-            print(f"[{self.node_name}] Hand DDS communication stopped")
-        except Exception as e:
-            print(f"[{self.node_name}] Failed to stop communication: {e}")
-    
-    @classmethod
-    def get_instance(cls) -> 'Dex3DDS':
-        """Get the singleton instance"""
-        return cls()
-
-# 便捷函数
-def get_dex3_dds() -> Dex3DDS:
-    """Get the hand DDS instance"""
-    return Dex3DDS.get_instance()
-
-
-def start_hand_communication(enable_publish: bool = True, enable_subscribe: bool = True):
-    """Start the hand DDS communication
-    
-    Args:
-        enable_publish: whether to enable the publish function (publish the left and right hand states)
-        enable_subscribe: whether to enable the subscribe function (receive the left and right hand control commands)
-    
-    Returns:
-        Dex3DDS: the DDS instance
-    """
-    dex3_dds = get_dex3_dds()
-    dex3_dds.start_communication(enable_publish=enable_publish, enable_subscribe=enable_subscribe)
-    return dex3_dds
-
-
-def start_hand_publisher_only():
-    """Start the hand state publish function only
-    
-    Applicable scenarios: only need to publish the left and right hand states, no need to receive the external control commands
-    """
-    return start_hand_communication(enable_publish=True, enable_subscribe=False)
-
-
-def start_hand_subscriber_only():
-    """Start the hand command subscribe function only
-    
-    Applicable scenarios: only need to receive the external left and right hand control commands, no need to publish the hand states
-    """
-    return start_hand_communication(enable_publish=False, enable_subscribe=True)
-
-
-def stop_hand_communication():
-    """Stop the hand DDS communication"""
-    dex3_dds = get_dex3_dds()
-    dex3_dds.stop_communication()
-
-
-if __name__ == "__main__":
-    # test the singleton pattern
-    dds1 = Dex3DDS()
-    dds2 = Dex3DDS()
-    print(f"Singleton test: {dds1 is dds2}")  # should be True
-    
-    # start the communication
-    try:
-        start_hand_communication()
-        
-        import time
-        while True:
-            time.sleep(1)
-            
-    except KeyboardInterrupt:
-        print("Program interrupted...")
-    finally:
-        stop_hand_communication() 

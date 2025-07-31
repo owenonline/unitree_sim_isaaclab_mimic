@@ -13,14 +13,15 @@ import time
 class FileActionProviderReplay(ActionProvider):
     """Action provider based on DDS"""
     
-    def __init__(self,env, robot_type="g129", enable_gripper=False, enable_dex3=False,generate_data=False,generate_data_dir="",frequency=30,rerun_log=True):
+    def __init__(self,env, args_cli):
         super().__init__("FileActionProviderReplay")
         self.env = env
-        self.enable_robot = robot_type
-        self.enable_gripper = enable_gripper
-        self.enable_dex3 = enable_dex3
-        self.generate_data = generate_data
-        self.generate_data_dir = generate_data_dir
+        self.enable_robot = args_cli.robot_type
+        self.enable_gripper = args_cli.enable_dex1_dds
+        self.enable_dex3 = args_cli.enable_dex3_dds
+        self.enable_inspire = args_cli.enable_inspire_dds
+        self.generate_data = args_cli.generate_data
+        self.generate_data_dir = args_cli.generate_data_dir
         self.action_index = 10**1000
         self.total_step_num =0
         self.start_loop = True
@@ -30,18 +31,16 @@ class FileActionProviderReplay(ActionProvider):
         self._setup_joint_mapping()
         self.multi_image_reader=None
         self.recorder=None
-        if generate_data:
-            # 只有在保存数据且需要图像时才创建MultiImageReader
-            # 对于replay场景，通常不需要实时图像数据
+        if self.generate_data:
             try:
                 self.multi_image_reader = MultiImageReader()
-                print(f"[{self.name}] MultiImageReader 创建成功")
+                print(f"[{self.name}] MultiImageReader created")
             except Exception as e:
-                print(f"[{self.name}] MultiImageReader 创建失败: {e}")
-                print(f"[{self.name}] 将禁用图像数据保存功能")
+                print(f"[{self.name}] MultiImageReader creation failed: {e}")
+                print(f"[{self.name}] Image data saving will be disabled")
                 self.multi_image_reader = None
             
-            self.recorder = EpisodeWriter(task_dir = generate_data_dir, frequency = frequency, rerun_log = rerun_log)
+            self.recorder = EpisodeWriter(task_dir = self.generate_data_dir, frequency = 30, rerun_log = True)
         print(f"FileActionProviderReplay init ok")
     def load_data(self, file_path):
         """Setup DDS communication"""
@@ -146,6 +145,23 @@ class FileActionProviderReplay(ActionProvider):
                     "right_hand_index_0_joint",
                     "right_hand_index_1_joint",
                 ]
+        if self.enable_inspire:
+            self.left_hand_joint = [
+                "L_pinky_proximal_joint",
+                "L_ring_proximal_joint",
+                "L_middle_proximal_joint",
+                "L_index_proximal_joint",
+                "L_thumb_proximal_pitch_joint",
+                "L_thumb_proximal_yaw_joint",
+            ]
+            self.right_hand_joint = [
+                "R_pinky_proximal_joint",
+                "R_ring_proximal_joint",
+                "R_middle_proximal_joint",
+                "R_index_proximal_joint",
+                "R_thumb_proximal_pitch_joint",
+                "R_thumb_proximal_yaw_joint",
+            ]
         self.left_hand_joint_indices = [self.joint_to_index[name] for name in self.left_hand_joint]
         self.right_hand_joint_indices = [self.joint_to_index[name] for name in self.right_hand_joint]
         self.all_joint_indices = self.left_arm_joint_indices + self.right_arm_joint_indices #+ self.left_hand_joint_indices + self.right_hand_joint_indices
@@ -164,8 +180,11 @@ class FileActionProviderReplay(ActionProvider):
                     hand_cmd_data = self.hand_action[self.action_index]
 
                 # Get hand command
-                if self.enable_dex3:
+                elif self.enable_dex3:
                     hand_cmd_data = self.hand_action[self.action_index]
+                elif self.enable_inspire:
+                    hand_cmd_data = self.hand_action[self.action_index]
+                
                 env.scene.reset_to(self.sim_state_list[self.action_index], torch.tensor([0], device=env.device), is_relative=True)
                 
                 if self.generate_data:
@@ -245,9 +264,10 @@ class FileActionProviderReplay(ActionProvider):
         if self.enable_gripper:
             left_hand_joint_pose = np.array(self._convert_to_gripper_range(joint_pos[:,self.left_hand_joint_indices][0].detach().cpu().numpy())).tolist()
             right_hand_joint_pose = np.array(self._convert_to_gripper_range(joint_pos[:,self.right_hand_joint_indices][0].detach().cpu().numpy())).tolist()
-        elif self.enable_dex3:
+        else:
             left_hand_joint_pose = joint_pos[:,self.left_hand_joint_indices][0].detach().cpu().numpy().tolist()
             right_hand_joint_pose = joint_pos[:,self.right_hand_joint_indices][0].detach().cpu().numpy().tolist()
+
 
         return left_arm_joint_pose,right_arm_joint_pose,left_hand_joint_pose,right_hand_joint_pose
 
@@ -258,7 +278,6 @@ class FileActionProviderReplay(ActionProvider):
         if total_width % image_count != 0:
             raise ValueError("Total width is not divisible by image_count. Cannot split cleanly.")
 
-        # 依次切分图像
         images = {}
         names = ['head', 'left', 'right']
         for i, name in enumerate(names[:image_count]):
@@ -268,14 +287,14 @@ class FileActionProviderReplay(ActionProvider):
         return images
     def save_date(self,env,arm_action,hand_action,sim_state=None):
         def ensure_list(data):
-            """确保数据是list类型，如果不是则进行转换"""
+            """Ensure data is list type, if not, convert to list"""
             if isinstance(data, list):
                 return data
-            elif hasattr(data, 'tolist'):  # numpy array或torch tensor
+            elif hasattr(data, 'tolist'):  # numpy array or torch tensor
                 return data.tolist()
-            elif hasattr(data, '__iter__') and not isinstance(data, (str, bytes)):  # 其他可迭代类型
+            elif hasattr(data, '__iter__') and not isinstance(data, (str, bytes)):  # other iterable types
                 return list(data)
-            else:  # 单个值
+            else:  # single value
                 return [data]
         
         left_arm_state,right_arm_state,left_ee_state,right_ee_state = self.get_state(env)
@@ -290,6 +309,9 @@ class FileActionProviderReplay(ActionProvider):
         elif self.enable_dex3:
             right_hand_action = hand_action[:7].tolist()
             left_hand_action = hand_action[7:].tolist()
+        elif self.enable_inspire:
+            right_hand_action = hand_action[:6].tolist()
+            left_hand_action = hand_action[6:].tolist()
         colors[f"color_{0}"] = images["head"]
         colors[f"color_{1}"] = images["left"]
         colors[f"color_{2}"] = images["right"]

@@ -44,14 +44,13 @@ def _get_dex3_dds_instance():
     """get the DDS instance, delay initialization"""
     global _dex3_dds, _dds_initialized
     
-    if not _dds_initialized:
+    if not _dds_initialized or _dex3_dds is None:
         try:
             # dynamically import the DDS module
             sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dds'))
-            from dds.dex3_dds import get_dex3_dds
+            from dds.dds_master import dds_manager
             
-            _dex3_dds = get_dex3_dds()
-            _dex3_dds.start_communication(enable_publish=True, enable_subscribe=False)
+            _dex3_dds = dds_manager.get_object("dex3")
             print("[Observations Dex3] DDS communication instance obtained")
             
             # register the cleanup function
@@ -59,8 +58,7 @@ def _get_dex3_dds_instance():
             def cleanup_dds():
                 try:
                     if _dex3_dds:
-                        _dex3_dds.stop_communication()
-                        _dex3_dds.cleanup()
+                        dds_manager.unregister_object("dex3")
                         print("[dex3_state] DDS communication closed correctly")
                 except Exception as e:
                     print(f"[dex3_state] Error closing DDS: {e}")

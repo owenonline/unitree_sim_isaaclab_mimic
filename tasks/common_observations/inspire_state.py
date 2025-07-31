@@ -33,21 +33,19 @@ def get_robot_girl_joint_names() -> list[str]:
     ]
 
 # global variable to cache the DDS instance
-_gripper_dds = None
+_inspire_dds = None
 _dds_initialized = False
 
 def _get_inspire_dds_instance():
     """get the DDS instance, delay initialization"""
     global _inspire_dds, _dds_initialized
     
-    if not _dds_initialized:
+    if not _dds_initialized or _inspire_dds is None:
         try:
             # dynamically import the DDS module
             sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dds'))
-            from dds.inspire_dds    import get_inspire_dds
-            
-            _inspire_dds = get_inspire_dds()
-            _inspire_dds.start_communication(enable_publish=True, enable_subscribe=False)
+            from dds.dds_master import dds_manager
+            _inspire_dds = dds_manager.get_object("inspire")
             print("[Observations] DDS communication instance obtained")
             
             # register the cleanup function
@@ -55,8 +53,7 @@ def _get_inspire_dds_instance():
             def cleanup_dds():
                 try:
                     if _inspire_dds:
-                        _inspire_dds.stop_communication()
-                        _inspire_dds.cleanup()
+                        dds_manager.unregister_object("inspire")
                         print("[gripper_state] DDS communication closed correctly")
                 except Exception as e:
                     print(f"[gripper_state] Error closing DDS: {e}")
@@ -70,13 +67,6 @@ def _get_inspire_dds_instance():
     
     return _inspire_dds
 
-def initialize_inspire_dds():
-    """explicitly initialize the DDS communication
-    
-    this function can be called manually to initialize the DDS communication,
-    instead of relying on delayed initialization
-    """
-    return _get_inspire_dds_instance()
 
 
 def get_robot_inspire_joint_states(
@@ -129,4 +119,5 @@ def get_robot_inspire_joint_states(
         # print(f"[gripper_state] Warning: no gripper joints found, expected: {gripper_joint_names}, available: {all_joint_names}")
         print(f"[gripper_state] Warning: no gripper joints found")
         return torch.zeros((joint_pos.shape[0], 2))
+
 

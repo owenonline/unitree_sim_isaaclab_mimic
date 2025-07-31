@@ -30,14 +30,13 @@ def _get_gripper_dds_instance():
     """get the DDS instance, delay initialization"""
     global _gripper_dds, _dds_initialized
     
-    if not _dds_initialized:
+    if not _dds_initialized or _gripper_dds is None:
         try:
             # dynamically import the DDS module
             sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dds'))
-            from dds.gripper_dds import get_gripper_dds
+            from dds.dds_master import dds_manager
             
-            _gripper_dds = get_gripper_dds()
-            _gripper_dds.start_communication(enable_publish=True, enable_subscribe=False)
+            _gripper_dds = dds_manager.get_object("dex1")
             print("[Observations] DDS communication instance obtained")
             
             # register the cleanup function
@@ -45,8 +44,7 @@ def _get_gripper_dds_instance():
             def cleanup_dds():
                 try:
                     if _gripper_dds:
-                        _gripper_dds.stop_communication()
-                        _gripper_dds.cleanup()
+                        dds_manager.unregister_object("dex1")
                         print("[gripper_state] DDS communication closed correctly")
                 except Exception as e:
                     print(f"[gripper_state] Error closing DDS: {e}")

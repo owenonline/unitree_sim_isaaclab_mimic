@@ -7,13 +7,13 @@ Handle the state publishing and command receiving of the gripper
 
 import threading
 from typing import Any, Dict, Optional
-from dds.dds_base import BaseDDSNode, node_manager
+from dds.dds_base import DDSObject
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelSubscriber
 from unitree_sdk2py.idl.unitree_go.msg.dds_ import MotorCmds_, MotorStates_
 from unitree_sdk2py.idl.default import unitree_go_msg_dds__MotorCmd_, unitree_go_msg_dds__MotorState_
 
 
-class GripperDDS(BaseDDSNode):
+class GripperDDS(DDSObject):
     """Gripper DDS communication class - singleton pattern
     
     Features:
@@ -21,24 +21,14 @@ class GripperDDS(BaseDDSNode):
     - Receive the control command of the gripper (rt/unitree_actuator/cmd)
     """
     
-    _instance = None
-    _lock = threading.Lock()
-    
-    def __new__(cls):
-        """Singleton pattern implementation"""
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(GripperDDS, cls).__new__(cls)
-        return cls._instance
-    
-    def __init__(self):
+    def __init__(self,node_name:str="gripper"):
         """Initialize the gripper DDS node"""
         # avoid duplicate initialization
         if hasattr(self, '_initialized'):
             return
             
-        super().__init__("GripperDDS")
+        super().__init__()
+        self.node_name = node_name
         
         # initialize the gripper state message (2 grippers)
         self.left_gripper_state = MotorStates_()
@@ -77,18 +67,17 @@ class GripperDDS(BaseDDSNode):
         """Setup the subscriber of the gripper"""
         try:
             self.left_gripper_cmd_subscriber = ChannelSubscriber("rt/dex1/left/cmd", MotorCmds_)
-            self.left_gripper_cmd_subscriber.Init(lambda msg: self.subscribe_message_handler(msg, "left"), 1)
+            self.left_gripper_cmd_subscriber.Init(lambda msg: self.dds_subscriber(msg, "left"), 1)
             self.right_gripper_cmd_subscriber = ChannelSubscriber("rt/dex1/right/cmd", MotorCmds_)
-            self.right_gripper_cmd_subscriber.Init(lambda msg: self.subscribe_message_handler(msg, "right"), 1)
+            self.right_gripper_cmd_subscriber.Init(lambda msg: self.dds_subscriber(msg, "right"), 1)
             self.subscriber = True
             print(f"[{self.node_name}] Gripper command subscriber initialized")
             return True
         except Exception as e:
             print(f"gripper_dds [{self.node_name}] Gripper command subscriber initialization failed: {e}")
             return False
-    def process_subscribe_data(self, msg: Any) -> Dict[str, Any]:
-        return {}
-    def subscribe_message_handler(self, msg: Any, hand_side: str):
+        
+    def dds_subscriber(self, msg: Any, hand_side: str):
         """Subscribe message handler"""
         try:
             # process received message
@@ -98,13 +87,9 @@ class GripperDDS(BaseDDSNode):
                 existing_data = self.output_shm.read_data() or {}
                 existing_data[f"{hand_side}_gripper_cmd"] = data
                 self.output_shm.write_data(existing_data)
-                
-            # call callback function
-            if self.subscribe_callback:
-                self.subscribe_callback(msg, data)
         except Exception as e:
             print(f"gripper_dds [{self.node_name}] Error processing subscribe message: {e}")
-    def process_publish_data(self, data: Dict[str, Any]) -> Any:
+    def dds_publisher(self) -> Any:
         """Process the publish data: convert the Isaac Lab state to the DDS message
         
         Expected data format:
@@ -115,6 +100,7 @@ class GripperDDS(BaseDDSNode):
         }
         """
         try:
+            data = self.input_shm.read_data() or {}
             # process the left hand data
             if "left_hand" in data:
                 left_data = data["left_hand"]
@@ -305,136 +291,3 @@ class GripperDDS(BaseDDSNode):
         converted_value = output_min + (output_max - output_min) * (input_min - value) / (input_min - input_max)
         
         return converted_value
-    
-    def start_communication(self, enable_publish: bool = True, enable_subscribe: bool = True):
-        """Start the gripper DDS communication
-        
-        Args:
-            enable_publish: whether to enable the publish function (publish the gripper state)
-            enable_subscribe: whether to enable the subscribe function (receive the gripper control command)
-        """
-        try:
-            # register the node
-            node_manager.register_node(self)
-            
-            # if the node is already running, dynamically add new features
-            if self.running:
-                print(f"[{self.node_name}] Node is already running, dynamically add features...")
-                
-                # if the publish function is enabled but the publisher is not set, then set the publisher
-                if enable_publish and not self.publisher:
-                    print(f"[{self.node_name}] Add publish function...")
-                    if self.setup_publisher():
-                        if not self.publish_thread or not self.publish_thread.is_alive():
-                            import threading
-                            
-                            self.publish_thread = threading.Thread(target=self._publish_loop)
-                            self.publish_thread.daemon = True
-                            self.publish_thread.start()
-                            print(f"[{self.node_name}] Publish thread started")
-                
-                # if the subscribe function is enabled but the subscriber is not set, then set the subscriber
-                if enable_subscribe and not self.subscriber:
-                    print(f"[{self.node_name}] Add subscribe function...")
-                    if self.setup_subscriber():
-                        if not self.subscribe_thread or not self.subscribe_thread.is_alive():
-                            import threading
-                            
-                            self.subscribe_thread = threading.Thread(target=self._subscribe_loop)
-                            self.subscribe_thread.daemon = True
-                            self.subscribe_thread.start()
-                            print(f"[{self.node_name}] Subscribe thread started")
-            else:
-                # the node is not running, start normally
-                self.start(enable_publish=enable_publish, enable_subscribe=enable_subscribe)
-            
-            status_msg = f"[{self.node_name}] Gripper DDS communication started"
-            if enable_publish and enable_subscribe:
-                status_msg += " (publish + subscribe)"
-            elif enable_publish:
-                status_msg += " (publish only)"
-            elif enable_subscribe:
-                status_msg += " (subscribe only)"
-            else:
-                status_msg += " (no function enabled)"
-            
-            print(status_msg)
-            
-        except Exception as e:
-            print(f"gripper_dds [{self.node_name}] Failed to start communication: {e}")
-    
-    def stop_communication(self):
-        """Stop the gripper DDS communication"""
-        try:
-            self.stop()
-            print(f"[{self.node_name}] Gripper DDS communication stopped")  
-        except Exception as e:
-            print(f"gripper_dds [{self.node_name}] Failed to stop communication: {e}")
-    
-    @classmethod
-    def get_instance(cls) -> 'GripperDDS':
-        """Get the singleton instance"""
-        return cls()
-
-
-# convenient functions
-def get_gripper_dds() -> GripperDDS:
-    """Get the gripper DDS instance"""
-    return GripperDDS.get_instance()
-
-
-def start_gripper_communication(enable_publish: bool = True, enable_subscribe: bool = True):
-    """Start the gripper DDS communication
-    
-    Args:
-        enable_publish: whether to enable the publish function (publish the gripper state)
-        enable_subscribe: whether to enable the subscribe function (receive the gripper control command)
-    
-    Returns:
-        GripperDDS: the DDS instance
-    """
-    gripper_dds = get_gripper_dds()
-    gripper_dds.start_communication(enable_publish=enable_publish, enable_subscribe=enable_subscribe)
-    return gripper_dds
-
-
-def start_gripper_publisher_only():
-    """Start the gripper state publish function only
-    
-    Applicable scenarios: only need to publish the gripper state, no need to receive the external control command
-    """
-    return start_gripper_communication(enable_publish=True, enable_subscribe=False)
-
-
-def start_gripper_subscriber_only():
-    """Start the gripper command subscribe function only
-    
-    Applicable scenarios: only need to receive the external control command, no need to publish the gripper state
-    """
-    return start_gripper_communication(enable_publish=False, enable_subscribe=True)
-
-
-def stop_gripper_communication():
-    """Stop the gripper DDS communication"""
-    gripper_dds = get_gripper_dds()
-    gripper_dds.stop_communication()
-
-
-if __name__ == "__main__":
-    # test the singleton pattern
-    dds1 = GripperDDS()
-    dds2 = GripperDDS()
-    print(f"Singleton test: {dds1 is dds2}")  # should be True
-    
-    # start the communication
-    try:
-        start_gripper_communication()
-        
-        import time
-        while True:
-            time.sleep(1)
-            
-    except KeyboardInterrupt:
-        print("Program interrupted...")
-    finally:
-        stop_gripper_communication() 

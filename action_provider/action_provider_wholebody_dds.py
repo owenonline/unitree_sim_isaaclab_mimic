@@ -8,12 +8,12 @@ import threading
 class DDSWholebodyActionProvider(ActionProvider):
     """Action provider based on DDS"""
     
-    def __init__(self,env, robot_type="g129", enable_gripper=False, enable_dex3=False, enable_inspire=False):
+    def __init__(self,env, args_cli):
         super().__init__("DDSWholebodyActionProvider")
-        self.enable_robot = robot_type
-        self.enable_gripper = enable_gripper
-        self.enable_dex3 = enable_dex3
-        self.enable_inspire = enable_inspire
+        self.enable_robot = args_cli.robot_type
+        self.enable_gripper = args_cli.enable_dex1_dds
+        self.enable_dex3 = args_cli.enable_dex3_dds
+        self.enable_inspire = args_cli.enable_inspire_dds
         self.env = env
         # Initialize DDS communication
         self.robot_dds = None

@@ -3,16 +3,16 @@
 from action_provider.action_base import ActionProvider
 from typing import Optional
 import torch
-
+from dds.dds_master import dds_manager
 class DDSActionProvider(ActionProvider):
     """Action provider based on DDS"""
     
-    def __init__(self,env, robot_type="g129", enable_gripper=False, enable_dex3=False, enable_inspire=False):
+    def __init__(self,env, args_cli):
         super().__init__("DDSActionProvider")
-        self.enable_robot = robot_type
-        self.enable_gripper = enable_gripper
-        self.enable_dex3 = enable_dex3
-        self.enable_inspire = enable_inspire
+        self.enable_robot = args_cli.robot_type
+        self.enable_gripper = args_cli.enable_dex1_dds
+        self.enable_dex3 = args_cli.enable_dex3_dds
+        self.enable_inspire = args_cli.enable_inspire_dds
         self.env = env
         # Initialize DDS communication
         self.robot_dds = None
@@ -29,22 +29,13 @@ class DDSActionProvider(ActionProvider):
         print(f"enable_dex3: {self.enable_dex3}")
         try:
             if self.enable_robot == "g129":
-                print(f"Starting G1 robot DDS subscriber...")
-                from dds.g1_robot_dds import start_g1_robot_subscriber_only
-                self.robot_dds = start_g1_robot_subscriber_only()
-                print(f"start_g1_robot_subscriber_only success")
+                self.robot_dds = dds_manager.get_object("g129")
             if self.enable_gripper:
-                from dds.gripper_dds import start_gripper_subscriber_only
-                self.gripper_dds = start_gripper_subscriber_only()
-                print(f"gripper_dds start_gripper_subscriber_only success")
+                self.gripper_dds = dds_manager.get_object("dex1")
             elif self.enable_dex3:
-                from dds.dex3_dds import start_hand_subscriber_only
-                self.dex3_dds = start_hand_subscriber_only()
-                print(f"dex3_dds start_hand_subscriber_only success")
+                self.dex3_dds = dds_manager.get_object("dex3")
             elif self.enable_inspire:
-                from dds.inspire_dds import start_inspire_hand_subscriber_only
-                self.inspire_dds = start_inspire_hand_subscriber_only()
-                print(f"inspire_dds start_inspire_hand_subscriber_only success")
+                self.inspire_dds = dds_manager.get_object("inspire")
             print(f"[{self.name}] DDS communication initialized")
         except Exception as e:
             print(f"[{self.name}] DDS initialization failed: {e}")
@@ -124,7 +115,8 @@ class DDSActionProvider(ActionProvider):
             }
         self.all_joint_names = self.env.scene["robot"].data.joint_names
         self.joint_to_index = {name: i for i, name in enumerate(self.all_joint_names)}
-        
+        self.arm_action_pose = [self.joint_to_index[name] for name in self.arm_joint_mapping.keys()]
+        self.arm_action_pose_indices = [self.arm_joint_mapping[name] for name in self.arm_joint_mapping.keys()]
     def get_action(self, env) -> Optional[torch.Tensor]:
         """Get action from DDS"""
         try:
@@ -190,11 +182,6 @@ class DDSActionProvider(ActionProvider):
                                 if joint_name in self.joint_to_index:
                                     inspire_value = inspire_cmds_positions[special_idx[0]]
                                     full_action[self.joint_to_index[joint_name]] = inspire_value * special_idx[1]
-                            
-            # print(f"full_action: {full_action}")
-            # self.env.scene["robot"].set_joint_position_target(full_action)
-            # self.env.scene["robot"].write_data_to_sim()
-            # self.env.observation_manager.compute()
             return full_action.unsqueeze(0)
             
         except Exception as e:

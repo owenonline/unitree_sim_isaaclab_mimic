@@ -81,6 +81,7 @@ def get_robot_arm_joint_names() -> list[str]:
     ]
 
 # global variable to cache the DDS instance
+from dds.dds_master import dds_manager
 _g1_robot_dds = None
 _dds_initialized = False
 
@@ -88,14 +89,13 @@ def _get_g1_robot_dds_instance():
     """get the DDS instance, delay initialization"""
     global _g1_robot_dds, _dds_initialized
     
-    if not _dds_initialized:
+    if not _dds_initialized or _g1_robot_dds is None:
         try:
             # dynamically import the DDS module
             sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dds'))
-            from dds.g1_robot_dds import get_g1_robot_dds
-            
-            _g1_robot_dds = get_g1_robot_dds()
-            _g1_robot_dds.start_communication(enable_publish=True, enable_subscribe=False)
+            from dds.dds_master import dds_manager
+            print(f"dds_manager: {dds_manager}")
+            _g1_robot_dds = dds_manager.get_object("g129")
             print("[g1_state] G1 robot DDS communication instance obtained")
             
             # register the cleanup function
@@ -103,8 +103,7 @@ def _get_g1_robot_dds_instance():
             def cleanup_dds():
                 try:
                     if _g1_robot_dds:
-                        _g1_robot_dds.stop_communication()
-                        _g1_robot_dds.cleanup()
+                        dds_manager.unregister_object("g129")
                         print("[g1_state] DDS communication closed correctly")
                 except Exception as e:
                     print(f"[g1_state] Error closing DDS: {e}")
@@ -173,6 +172,8 @@ def get_robot_boy_joint_states(
                         boy_joint_torque[0][:],  
                         imu_data[0] 
                     )
+            else:
+                print(f"g1_robot_dds is not initialized")
         except Exception as e:
             print(f"[g1_state] Error writing robot state to DDS: {e}")
     
