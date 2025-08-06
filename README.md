@@ -240,7 +240,7 @@ pip install -r requirements.txt
 ```
 ### 2.3 Run Program
 
-### 2.3.1 Asset Download
+#### 2.3.1 Asset Download
 
 Use the following command to download the required asset files
 
