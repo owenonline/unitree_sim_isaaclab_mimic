@@ -29,15 +29,16 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
             usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Simple_Warehouse/warehouse.usd",  # use simple room model
         ),
     )
-
-
+    # print(f"ISAAC_NUCLEUS_DIR: {ISAAC_NUCLEUS_DIR}")
+    #ISAAC_NUCLEUS_DIR: http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac
         # 1. table configuration
     packing_table = AssetBaseCfg(
         prim_path="/World/envs/env_.*/PackingTable",    # table in the scene
         init_state=AssetBaseCfg.InitialStateCfg(pos=[0.0, 0.55, -0.2],   # initial position [x, y, z]
                                                 rot=[1.0, 0.0, 0.0, 0.0]), # initial rotation [x, y, z, w]
         spawn=UsdFileCfg(
-            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/PackingTable/packing_table.usd",    # table model file
+            # usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/PackingTable/packing_table.usd",    # table model file
+            usd_path=f"{project_root}/assets/objects/PackingTable/PackingTable.usd",    # table model file
             rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),    # set to kinematic object
         ),
     )
@@ -47,7 +48,7 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
         init_state=AssetBaseCfg.InitialStateCfg(pos=[-3.5, 0.55, -0.2],  
                                                 rot=[1.0, 0.0, 0.0, 0.0]), 
         spawn=UsdFileCfg(
-            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/PackingTable/packing_table.usd",   
+            usd_path=f"{project_root}/assets/objects/PackingTable/PackingTable.usd",    # table model file
             rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),   
         ),
     )
@@ -56,7 +57,7 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
         init_state=AssetBaseCfg.InitialStateCfg(pos=[3.5, 0.55, -0.2],  
                                                 rot=[1.0, 0.0, 0.0, 0.0]), 
         spawn=UsdFileCfg(
-            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/PackingTable/packing_table.usd",   
+            usd_path=f"{project_root}/assets/objects/PackingTable/PackingTable.usd",    # table model file
             rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),   
         ),
     )
@@ -65,7 +66,7 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
         init_state=AssetBaseCfg.InitialStateCfg(pos=[3.5, -5, -0.2],  
                                                 rot=[1.0, 0.0, 0.0, 0.0]), 
         spawn=UsdFileCfg(
-            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/PackingTable/packing_table.usd",   
+            usd_path=f"{project_root}/assets/objects/PackingTable/PackingTable.usd",    # table model file
             rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),   
         ),
     )
@@ -74,7 +75,7 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
         init_state=AssetBaseCfg.InitialStateCfg(pos=[-3.5, -5, -0.2],  
                                                 rot=[1.0, 0.0, 0.0, 0.0]), 
         spawn=UsdFileCfg(
-            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/PackingTable/packing_table.usd",   
+            usd_path=f"{project_root}/assets/objects/PackingTable/PackingTable.usd",    # table model file
             rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),   
         ),
     )
@@ -83,7 +84,7 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
         init_state=AssetBaseCfg.InitialStateCfg(pos=[0.0, -5, -0.2],  
                                                 rot=[1.0, 0.0, 0.0, 0.0]), 
         spawn=UsdFileCfg(
-            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/PackingTable/packing_table.usd",   
+            usd_path=f"{project_root}/assets/objects/PackingTable/PackingTable.usd",    # table model file
             rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),   
         ),
     )
@@ -113,10 +114,10 @@ class TableCylinderSceneCfg(InteractiveSceneCfg): # inherit from the interactive
     )
     # Ground plane
     # 3. ground configuration
-    ground = AssetBaseCfg(
-        prim_path="/World/GroundPlane",    # ground in the scene
-        spawn=GroundPlaneCfg( ),    # ground configuration
-    )
+    # ground = AssetBaseCfg(
+    #     prim_path="/World/GroundPlane",    # ground in the scene
+    #     spawn=GroundPlaneCfg( ),    # ground configuration
+    # )
 
     # Lights
     # 4. light configuration

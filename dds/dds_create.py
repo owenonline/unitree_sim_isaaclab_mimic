@@ -29,6 +29,12 @@ def create_dds_objects(args_cli,env):
         dds_manager.register_object("inspire", inspire)
         publish_names.append("inspire")
         subscribe_names.append("inspire")
+    if "Wholebody" in args_cli.task or args_cli.enable_wholebody_dds:
+        from dds.commands_dds import RunCommandDDS
+        run_command_dds = RunCommandDDS()
+        dds_manager.register_object("run_command", run_command_dds)
+        publish_names.append("run_command")
+        subscribe_names.append("run_command")
     from dds.reset_pose_dds import ResetPoseCmdDDS
     reset_pose_dds = ResetPoseCmdDDS()
     dds_manager.register_object("reset_pose", reset_pose_dds)

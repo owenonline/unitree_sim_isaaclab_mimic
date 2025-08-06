@@ -144,7 +144,9 @@ def get_robot_boy_joint_states(
     # all_joint_names = env.scene["robot"].data.joint_names
     # print(f"all_joint_names: {all_joint_names}")
     # boy_joint_indices = [all_joint_names.index(name) for name in boy_joint_names]
+    # print(f"boy_joint_indices: {boy_joint_indices}")
     boy_joint_indices = [0, 3, 6, 9, 13, 17, 1, 4, 7, 10, 14, 18, 2, 5, 8, 11, 15, 19, 21, 23, 25, 27, 12, 16, 20, 22, 24, 26, 28]
+
 
 
     # print(f"boy_joint_indices: {boy_joint_indices}")

@@ -77,10 +77,10 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
 
     # Ground plane
     # 3. ground configuration
-    ground = AssetBaseCfg(
-        prim_path="/World/GroundPlane",    # ground in the scene
-        spawn=GroundPlaneCfg( ),    # ground configuration
-    )
+    # ground = AssetBaseCfg(
+    #     prim_path="/World/GroundPlane",    # ground in the scene
+    #     spawn=GroundPlaneCfg( ),    # ground configuration
+    # )
 
     # Lights
     # 4. light configuration

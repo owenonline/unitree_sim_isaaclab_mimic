@@ -50,6 +50,8 @@ parser.add_argument("--step_hz", type=int, default=500, help="control frequency"
 parser.add_argument("--enable_profiling", action="store_true", default=True, help="enable performance analysis")
 parser.add_argument("--profile_interval", type=int, default=500, help="performance analysis report interval (steps)")
 
+parser.add_argument("--model_path", type=str, default="assets/model/policy.onnx", help="model path")
+parser.add_argument("--enable_wholebody_dds", action="store_true", default=False, help="enable wh dds")
 
 # add AppLauncher parameters
 AppLauncher.add_app_launcher_args(parser)
@@ -83,7 +85,7 @@ from tools.augmentation_utils import (
 from tools.data_json_load import sim_state_to_json
 from dds.sim_state_dds import *
 from action_provider.create_action_provider import create_action_provider
-
+from tools.get_stiffness import get_robot_stiffness_from_env
 
 
 def setup_signal_handlers(controller,dds_manager=None):
@@ -102,6 +104,7 @@ def setup_signal_handlers(controller,dds_manager=None):
     
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
+
 
 
 def main():
@@ -148,6 +151,22 @@ def main():
         print(f"\nFailed to create environment: {e}")
         return
     
+    # get robot stiffness and damping parameters from runtime environment
+    print("\n" + "="*60)
+    print("🔍 Getting robot stiffness and damping parameters from runtime environment")
+    print("="*60)
+    
+    try:
+        stiffness_data = get_robot_stiffness_from_env(env)
+        if stiffness_data:
+            print("✅ Successfully got robot parameters!")
+        else:
+            print("⚠️ Failed to get robot parameters, will try again after environment reset")
+    except Exception as e:
+        print(f"⚠️ Error getting robot parameters: {e}")
+    
+    print("="*60)
+    
     print("\n")
     print("***  Please left-click on the Sim window to activate rendering. ***")
     print("\n")
@@ -173,8 +192,6 @@ def main():
         )
     env.sim.reset()
     env.reset()
-    
-
     
     # create simplified control configuration
     try:    
@@ -222,6 +239,11 @@ def main():
     
     print(f"\ncreate action provider: {args_cli.action_source}...")
     try:
+        print(f"args_cli.task: {args_cli.task}")
+        if "Wholebody" in args_cli.task or args_cli.enable_wholebody_dds:
+            args_cli.action_source = "dds_wholebody"
+            args_cli.enable_wholebody_dds = True
+            control_config.use_rl_action_mode = True
         action_provider = create_action_provider(env,args_cli)
         if action_provider is None:
             print("action provider creation failed, exiting")
@@ -281,11 +303,11 @@ def main():
                     if reset_pose_cmd is not None:
                         reset_category = reset_pose_cmd.get("reset_category")
                         # print(f"reset_category: {reset_category}")
-                        if reset_category == '1':
+                        if (args_cli.enable_wholebody_dds and (reset_category == '1' or reset_category == '2')) or (not args_cli.enable_wholebody_dds and reset_category == '1'):
                             print("reset object")
                             env_cfg.event_manager.trigger("reset_object_self", env)
                             reset_pose_dds.write_reset_pose_command(-1)
-                        elif reset_category == '2':
+                        elif reset_category == '2' and not args_cli.enable_wholebody_dds:
                             print("reset all")
                             env_cfg.event_manager.trigger("reset_all_self", env)
                             reset_pose_dds.write_reset_pose_command(-1)
@@ -439,3 +461,10 @@ if __name__ == "__main__":
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_dex1_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex3-Joint     --enable_dex3_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Inspire-Joint     --enable_inspire_dds --robot_type g129
+
+
+
+
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-Move-Cylinder-G129-Dex1-Wholebody  --robot_type g129 --enable_dex1_dds 
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-Move-Cylinder-G129-Dex3-Wholebody  --robot_type g129 --enable_dex3_dds 
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-Move-Cylinder-G129-Inspire-Wholebody  --robot_type g129 --enable_inspire_dds 

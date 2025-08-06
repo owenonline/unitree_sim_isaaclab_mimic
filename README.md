@@ -10,6 +10,8 @@
 - Please use the [officially recommended](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html) hardware resources for deployment
 - The simulator may take some time to load resources during its first startup, and the waiting time depends on hardware performance and network environment
 - After the simulator starts running, it will send/receive the same DDS topics as the real robot (Please note to distinguish between the simulator and real robot if there is a real robot running on the same network). For specific DDS usage, please refer to[G1 Control](https://github.com/unitreerobotics/unitree_sdk2_python/tree/master/example/g1) and [Dex3 Dexterous Hand Control](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/g1/dex3/g1_dex3_example.cpp)
+- The weight files provided in this project are only for simulation environment testing and cannot be used on real robots
+- Currently, this project has only been tested on RTX3080, RTX3090, and RTX4090. RTX50 series may have rendering issues 
 - After the virtual scene starts up, please click PerspectiveCamera -> Cameras -> PerspectiveCamera to view the main view scene. The operation steps are shown below:
 <table align="center">
     <tr>
@@ -26,7 +28,7 @@
 This project is built on **Isaac Lab** to simulate **Unitree robots** in various tasks, facilitating data collection, playback, generation, and model validation. It can be used in conjunction with the [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate) repository for dataset collection. The project adopts the same DDS communication protocol as the real robot to enhance code generality and ease of use.
 
 
-Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unitree G1 with three-finger dexterous hand (G1-29dof-dex3) to build simulation scenarios for different tasks. The specific task scene names and illustrations are shown in the table below:
+Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unitree G1 with three-finger dexterous hand (G1-29dof-dex3) to build simulation scenarios for different tasks. The specific task scene names and illustrations are shown in the table below. Tasks with `Wholebody` in their names can perform movement operations:
 
 <table align="center">
   <tr>
@@ -83,6 +85,23 @@ Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unit
       <img src="./img/Isaac-Stack-RgyBlock-G129-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
       <br/>
       <code>Isaac-Stack-RgyBlock-G129-Inspire-Joint</code>
+    </td>
+  </tr>
+    <tr>
+    <td align="center">
+      <img src="./img/Isaac-Move-Cylinder-G129-Dex1-Wholebody.png" width="300" alt="G1-gripper-redblock"/>
+      <br/>
+      <code>Isaac-Move-Cylinder-G129-Dex1-Wholebody</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-Move-Cylinder-G129-Dex3-Wholebody.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-Move-Cylinder-G129-Dex3-Wholebody</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-Move-Cylinder-G129-Inspire-Wholebody.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-Move-Cylinder-G129-Inspire-Wholebody</code>
     </td>
   </tr>
 </table>
@@ -221,7 +240,15 @@ pip install -r requirements.txt
 ```
 ### 2.3 Run Program
 
-#### 2.3.1 Teleoperation
+### 2.3.1 Asset Download
+
+Use the following command to download the required asset files
+
+```
+. fetch_assets.sh
+```
+
+#### 2.3.2 Teleoperation
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_gripper_dds --robot_type g129
@@ -231,7 +258,9 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 - --enable_gripper_dds/--enable_dex3_dds: Represent enabling DDS for two-finger gripper/three-finger dexterous hand respectively  
 - --robot_type: Robot type, currently has 29-DOF unitree g1 (g129)
 
-#### 2.3.2 Data Replay
+**Note:** If you need to control robot movement, please refer to `send_commands_8bit.py` or `send_commands_keyboard.py` to publish control commands, or you can use them directly.
+
+#### 2.3.3 Data Replay
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/xr_teleoperate/teleop/utils/data" 
@@ -243,7 +272,7 @@ python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G
 
 **Note:** The dataset format used here is consistent with the one recorded via teleoperation in [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate) .
 
-#### 2.3.3 Data Generation
+#### 2.3.4 Data Generation
 During data replay, by modifying lighting conditions and camera parameters and re-capturing image data, more diverse visual features can be generated for data augmentation, thereby improving the model’s generalization ability.
 ```
 python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/xr_teleoperate/teleop/utils/data" --generate_data --generate_data_dir "./data2"

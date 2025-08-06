@@ -118,3 +118,7 @@ temp/
 
 data.*
 data/
+
+assets/
+assets.*
+assets

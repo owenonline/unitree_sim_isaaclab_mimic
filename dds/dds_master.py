@@ -71,7 +71,7 @@ class DDSManager:
             
             self.objects[name] = obj
             
-            print(f"[DDSManager] register object '{name}' success (category: {category or '未分类'})")
+            print(f"[DDSManager] register object '{name}' success (category: {category or 'No category'})")
             
             
             return True

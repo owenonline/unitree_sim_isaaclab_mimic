@@ -129,11 +129,11 @@ class G1RobotDDS(DDSObject):
             "mode_pr": int,
             "mode_machine": int,
             "motor_cmd": {
-                "positions": [35 joint position commands],
-                "velocities": [35 joint velocity commands],
-                "torques": [35 joint torque commands],
-                "kp": [35 position gains],
-                "kd": [35 speed gains]
+                "positions": [29 joint position commands],
+                "velocities": [29 joint velocity commands],
+                "torques": [29 joint torque commands],
+                "kp": [29 position gains],
+                "kd": [29 speed gains]
             }
         }
         """
@@ -144,15 +144,16 @@ class G1RobotDDS(DDSObject):
                 return {}
             
             # extract the command data
+            num_cmd_motors = min(29, len(msg.motor_cmd))  # G1机器人29个自由度
             cmd_data = {
                 "mode_pr": int(msg.mode_pr),
                 "mode_machine": int(msg.mode_machine),
                 "motor_cmd": {
-                    "positions": [float(msg.motor_cmd[i].q) for i in range(35)],
-                    "velocities": [float(msg.motor_cmd[i].dq) for i in range(35)],
-                    "torques": [float(msg.motor_cmd[i].tau) for i in range(35)],
-                    "kp": [float(msg.motor_cmd[i].kp) for i in range(35)],
-                    "kd": [float(msg.motor_cmd[i].kd) for i in range(35)]
+                    "positions": [float(msg.motor_cmd[i].q) for i in range(num_cmd_motors)],
+                    "velocities": [float(msg.motor_cmd[i].dq) for i in range(num_cmd_motors)],
+                    "torques": [float(msg.motor_cmd[i].tau) for i in range(num_cmd_motors)],
+                    "kp": [float(msg.motor_cmd[i].kp) for i in range(num_cmd_motors)],
+                    "kd": [float(msg.motor_cmd[i].kd) for i in range(num_cmd_motors)]
                 }
             }
             # print(f"cmd_data: {cmd_data}")

@@ -8,7 +8,7 @@ support different robot variants: with/without waist joint, different finger con
 
 from isaaclab.assets import ArticulationCfg
 from isaaclab.utils import configclass
-from robots.unitree import G129_CFG_WITH_DEX1_BASE_FIX,G129_CFG_WITH_DEX3_BASE_FIX,G129_CFG_WITH_INSPIRE_HAND
+from robots.unitree import G129_CFG_WITH_DEX1_BASE_FIX,G129_CFG_WITH_DEX3_BASE_FIX,G129_CFG_WITH_INSPIRE_HAND,G129_CFG_WITH_DEX1_WHOLEBODY,G129_CFG_WITH_DEX3_WHOLEBODY,G129_CFG_WITH_INSPIRE_WHOLEBODY
 from typing import Optional, Dict, Tuple, Literal
 
 
@@ -176,7 +176,9 @@ class G129dofRobotBaseCfg:
         include_waist: bool = True,
         hand_type: Literal["gripper", "dex3", "inspire"] = "gripper",
         base_config = None,
-        custom_joint_pos: Optional[Dict[str, float]] = None
+        custom_joint_pos: Optional[Dict[str, float]] = None,
+        is_have_hand: bool = True,
+        update_default_joint_pos: bool = True
     ) -> ArticulationCfg:
         """get the base configuration for G1 robot
         
@@ -197,20 +199,23 @@ class G129dofRobotBaseCfg:
         if base_config is None:
             base_config = G129_CFG_WITH_DEX1_BASE_FIX
         
-        # build the complete default joint position
-        default_joint_pos = {}
-        
-        # add the leg joints
-        default_joint_pos.update(G1RobotJointTemplates.get_leg_joints())
-        
-        # add the waist joints (if enabled)
-        default_joint_pos.update(G1RobotJointTemplates.get_waist_joints(include_waist))
-        
-        # add the arm joints
-        default_joint_pos.update(G1RobotJointTemplates.get_arm_joints())
-        
-        # add the hand joints
-        default_joint_pos.update(G1RobotJointTemplates.get_hand_joints(hand_type))
+        if update_default_joint_pos:
+            # build the complete default joint position
+            default_joint_pos = {}
+            # add the leg joints
+            default_joint_pos.update(G1RobotJointTemplates.get_leg_joints())
+            
+            # add the waist joints (if enabled)
+            default_joint_pos.update(G1RobotJointTemplates.get_waist_joints(include_waist))
+            
+            # add the arm joints
+            default_joint_pos.update(G1RobotJointTemplates.get_arm_joints())
+            
+            # add the hand joints
+            if is_have_hand:
+                default_joint_pos.update(G1RobotJointTemplates.get_hand_joints(hand_type))
+        else:
+            default_joint_pos = base_config.init_state.joint_pos.copy()
         
         # if the custom joint position is provided, merge it
         if custom_joint_pos:
@@ -274,4 +279,36 @@ class G1RobotPresets:
             hand_type="inspire",
             base_config=G129_CFG_WITH_INSPIRE_HAND
         )
-
+    @classmethod
+    def g1_29dof_dex1_wholebody(cls,init_pos: Tuple[float, float, float] = (-0.15, 0.0, 0.80),
+        init_rot: Tuple[float, float, float, float] = (0.7071, 0, 0, 0.7071)) -> ArticulationCfg:
+        """pick-place task configuration - inspire hand"""
+        return G129dofRobotBaseCfg.get_base_config(
+            init_pos=init_pos,
+            init_rot=init_rot,
+            include_waist=True,
+            is_have_hand=False,
+            base_config=G129_CFG_WITH_DEX1_WHOLEBODY,
+            update_default_joint_pos=False )
+    @classmethod
+    def g1_29dof_dex3_wholebody(cls,init_pos: Tuple[float, float, float] = (-0.15, 0.0, 0.80),
+        init_rot: Tuple[float, float, float, float] = (0.7071, 0, 0, 0.7071)) -> ArticulationCfg:
+        """pick-place task configuration - inspire hand"""
+        return G129dofRobotBaseCfg.get_base_config(
+            init_pos=init_pos,
+            init_rot=init_rot,
+            include_waist=True,
+            is_have_hand=False,
+            base_config=G129_CFG_WITH_DEX3_WHOLEBODY,
+            update_default_joint_pos=False )
+    @classmethod
+    def g1_29dof_inspire_wholebody(cls,init_pos: Tuple[float, float, float] = (-0.15, 0.0, 0.80),
+        init_rot: Tuple[float, float, float, float] = (0.7071, 0, 0, 0.7071)) -> ArticulationCfg:
+        """pick-place task configuration - inspire hand"""
+        return G129dofRobotBaseCfg.get_base_config(
+            init_pos=init_pos,
+            init_rot=init_rot,
+            include_waist=True,
+            is_have_hand=False,
+            base_config=G129_CFG_WITH_INSPIRE_WHOLEBODY,
+            update_default_joint_pos=False )

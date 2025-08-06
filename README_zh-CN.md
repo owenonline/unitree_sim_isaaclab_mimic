@@ -10,6 +10,8 @@
 - 请使用[官方推荐](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html)的硬件资源进行部署使用
 - 仿真器在第一次启动的时候由于其自身需要加载资源可能会等待一段时间，具体等待时间与硬件性能以及网络环境有关
 - 仿真器运行起来以后会发送/接收和真实机器人一样的DDS话题(如果同一网路中有真实机器人运行请注意区分)，DDS的使用具体可参考[G1控制](https://github.com/unitreerobotics/unitree_sdk2_python/tree/master/example/g1)、[Dex3灵巧手控制](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/g1/dex3/g1_dex3_example.cpp)
+- 项目中提供的权重文件只针对仿真环境测试使用，不可用在真实机器人上
+- 目前项目我们只在RTX3080、RTX3090以及RTX4090上进行测试。RTX50系列可能会有渲染问题
 - 虚拟场景启动以后请点击 PerspectiveCamera -> Cameras -> PerspectiveCamera 查看主视图的场景。操作步骤如下图所示:
 <table align="center">
     <tr>
@@ -24,7 +26,8 @@
 ## 1、 📖 介绍
 该项目基于Isaac Lab 搭建**宇树(Unitree)机器人**在不同任务下的仿真场景，方便进行数据采集、数据回放、数据生成以及模型验证。可以与[xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate)代码配合进行数据集的采集。该项目采用了与真实机器人一样的DDS通信，以提高代码的通用性和使用的简易性。
 
-目前该项目使用带有夹爪的Unitree G1(G1-29dof-gripper)以及带有三指灵巧手的Unitree G1(G1-29dof-dex3)搭建了不同任务的仿真场景，具体任务场景名称与图示如下表：
+目前该项目使用带有夹爪的Unitree G1(G1-29dof-gripper)以及带有三指灵巧手的Unitree G1(G1-29dof-dex3)搭建了不同任务的仿真场景，具体任务场景名称与图示如下表,其中任务名称中带有 `Wholebody`的任务可以进行移动操作：
+
 
 <table align="center">
   <tr>
@@ -48,6 +51,7 @@
       <br/>
       <code>Isaac-PickPlace-Cylinder-G129-Inspire-Joint</code>
     </td>
+
   </tr>
   <tr>
     <td align="center">
@@ -81,6 +85,24 @@
       <img src="./img/Isaac-Stack-RgyBlock-G129-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
       <br/>
       <code>Isaac-Stack-RgyBlock-G129-Inspire-Joint</code>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center">
+      <img src="./img/Isaac-Move-Cylinder-G129-Dex1-Wholebody.png" width="300" alt="G1-gripper-redblock"/>
+      <br/>
+      <code>Isaac-Move-Cylinder-G129-Dex1-Wholebody</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-Move-Cylinder-G129-Dex3-Wholebody.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-Move-Cylinder-G129-Dex3-Wholebody</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-Move-Cylinder-G129-Inspire-Wholebody.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-Move-Cylinder-G129-Inspire-Wholebody</code>
     </td>
   </tr>
 </table>
@@ -228,7 +250,15 @@ pip install -r requirements.txt
 
 ### 2.3 运行程序
 
-#### 2.3.1 遥操作
+### 2.3.1 资产下载
+
+使用下面的命令下载需要的资产文件
+
+```
+. fetch_assets.sh
+```
+
+#### 2.3.2 遥操作
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_gripper_dds --robot_type g129
@@ -238,7 +268,9 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 - --enable_gripper_dds/--enable_dex3_dds: 分别代表启用二指夹爪/三指灵巧手的dds
 - --robot_type: 机器人类型，目前有29自由度的unitree g1(g129)
 
-#### 2.3.2 数据回放
+**注意:** 如需要控制机器人移动，请参考`send_commands_8bit.py` 或者 `send_commands_keyboard.py` 发布控制命令，也可以直接使用。
+
+#### 2.3.3 数据回放
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_gripper_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/xr_teleoperate/teleop/utils/data" 
@@ -248,7 +280,7 @@ python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G
 
 **注意：** 这里使用的数据集存放格式是与[xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate)遥操作录制的数据集格式一致。
 
-#### 2.3.3 数据生成
+#### 2.3.4 数据生成
 通过在数据回放过程中调整光照条件和相机参数，并重新采集图像数据，可用于生成具有多样化视觉特征的增强数据，从而提升模型的泛化能力。
 
 ```

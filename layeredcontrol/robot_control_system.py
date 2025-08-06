@@ -16,6 +16,7 @@ class ControlConfig:
     """minimal control configuration"""
     step_hz: int = 500  # the frequency of the low-level execution
     replay_mode: bool = False
+    use_rl_action_mode: bool = False
 
 
 class RobotController:
@@ -118,7 +119,7 @@ class RobotController:
         
         # 2. direct environment step
         env_start = perf_counter()
-        if self.config.replay_mode:
+        if self.config.replay_mode or self.config.use_rl_action_mode:
             pass
             # self.env.sim.render()
         else:
