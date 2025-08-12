@@ -54,7 +54,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
                 disable_gravity=False,
                 retain_accelerations=False
             ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=1.5),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
             collision_props=sim_utils.CollisionPropertiesCfg(
                 collision_enabled=True,
                 contact_offset=0.01,
@@ -85,7 +85,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
                 disable_gravity=False,
                 retain_accelerations=False
             ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=1.5),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
             collision_props=sim_utils.CollisionPropertiesCfg(
                 collision_enabled=True,
                 contact_offset=0.01,
@@ -115,7 +115,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
                 disable_gravity=False,
                 retain_accelerations=False
             ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=1.5),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
             collision_props=sim_utils.CollisionPropertiesCfg(
                 collision_enabled=True,
                 contact_offset=0.01,

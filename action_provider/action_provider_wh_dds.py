@@ -11,6 +11,7 @@ import time
 import threading
 from isaaclab.utils.buffers import CircularBuffer,DelayBuffer
 import os
+import ast
 project_root = os.environ.get("PROJECT_ROOT")
 class DDSRLActionProvider(ActionProvider):
     """Action provider based on DDS"""
@@ -275,7 +276,6 @@ class DDSRLActionProvider(ActionProvider):
             
             if isinstance(run_command_data, str):
                 try:
-                    import ast
                     run_command_list = ast.literal_eval(run_command_data)
                     if isinstance(run_command_list, list) and len(run_command_list) >= 4:
                         command[0] = float(run_command_list[0])

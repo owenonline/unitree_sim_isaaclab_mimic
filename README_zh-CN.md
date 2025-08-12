@@ -10,8 +10,8 @@
 - 请使用[官方推荐](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html)的硬件资源进行部署使用
 - 仿真器在第一次启动的时候由于其自身需要加载资源可能会等待一段时间，具体等待时间与硬件性能以及网络环境有关
 - 仿真器运行起来以后会发送/接收和真实机器人一样的DDS话题(如果同一网路中有真实机器人运行请注意区分)，DDS的使用具体可参考[G1控制](https://github.com/unitreerobotics/unitree_sdk2_python/tree/master/example/g1)、[Dex3灵巧手控制](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/g1/dex3/g1_dex3_example.cpp)
-- 项目中提供的权重文件只针对仿真环境测试使用，不可用在真实机器人上
-- 目前项目我们只在RTX3080、RTX3090以及RTX4090上进行测试。RTX50系列可能会有渲染问题
+- 项目中提供的权重文件只针对仿真环境测试使用
+- 目前项目我们只在RTX3080、RTX3090以及RTX4090上进行测试。RTX50系列显卡请使用IsaacSim 5.0.0版本
 - 虚拟场景启动以后请点击 PerspectiveCamera -> Cameras -> PerspectiveCamera 查看主视图的场景。操作步骤如下图所示:
 <table align="center">
     <tr>
@@ -108,145 +108,14 @@
 </table>
 
 ## 2、⚙️ 环境配置与运行
-该项目需要安装Isaac Sim 4.5.0以及Isaac Lab，具体安装可参考[官方教程](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html).或者按照下面流程进行安装。Ubuntu 20.4与Ubuntu 22.4以及以上版本安装方式不同，请根据自己的系统版本进行安装。
+该项目需要安装Isaac Sim 4.5.0/Isaac Sim 5.0.0以及Isaac Lab，具体安装可参考[官方教程](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html).或者按照下面流程进行安装。Ubuntu 20.4与Ubuntu 22.4以及以上版本安装方式不同，请根据自己的系统版本以及显卡资源进行安装。
 
-### 2.1 Ubuntu 22.04 以及以上的安装
+### 2.1 Isaac Sim 4.5.0相关环境安装（RTX4080以下推荐安装）
 
--  创建虚拟环境
+请参考<a href="doc/isaacsim4.5_install_zh.md"> isaacsim 4.5.0 环境安装步骤 </a> 进行环境安装
 
-```
-conda create -n unitree_sim_env python=3.10
-conda activate unitree_sim_env
-```
-- 安装Pytorch
-
-这个需要根据自己的CUDA版本进行安装，具体参考[Pytorch官方教程](https://pytorch.org/get-started/locally/),下面以CUDA 12为例进行安装
-
-```
-pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
-```
-- 2.1.3 安装 Isaac Sim 4.5.0
-
-```
-pip install --upgrade pip
-
-pip install 'isaacsim[all,extscache]==4.5.0' --extra-index-url https://pypi.nvidia.com
-
-```
-验证是否安装成功
-```
-isaacsim
-```
-第一次执行会有:Do you accept the EULA? (Yes/No):  Yes
-
-
-
-- 安装Isaac Lab
-
-目前使用的IsaacLab 的版本号是91ad4944f2b7fad29d52c04a5264a082bcaad71d
-
-```
-git clone git@github.com:isaac-sim/IsaacLab.git
-
-sudo apt install cmake build-essential
-
-cd IsaacLab
-
-./isaaclab.sh --install 
-
-```
-
-验证安装是否成功
-```
-python scripts/tutorials/00_sim/create_empty.py
-or
-./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py
-```
-
-- 安装unitree_sdk2_python
-
-```
-git clone https://github.com/unitreerobotics/unitree_sdk2_python
-
-cd unitree_sdk2_python
-
-pip3 install -e .
-```
-- 安装其他依赖
-```
-pip install -r requirements.txt
-```
-
-### 2.2 Ubuntu 20.4安装
-
-- 下载二进制的Isaaac Sim
-
-下载对应版本的
-[二进制Isaac Sim 4.5.0](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/installation/download.html)并解压；
-
-假设isaac sim放在`/home/unitree/tools/isaac-sim`,请按照下面的步骤进行安装；
-
-- 设在环境变量
-
-```
-export ISAACSIM_PATH="${HOME}/tools/isaac-sim"
-
-export ISAACSIM_PYTHON_EXE="${ISAACSIM_PATH}/python.sh"
-
-```
-测试设置是否成功
-
-```
-${ISAACSIM_PATH}/isaac-sim.sh
-
-或
-
-${ISAACSIM_PYTHON_EXE} -c "print('Isaac Sim configuration is now complete.')" 
-
-需要退出包括base在内的所有的conda环境
-
-```
-
-**注意：** 可以把上面命令写到bashrc文件中
-
-- 安装 Isaac Lab
-
-目前使用的IsaacLab 的版本号是91ad4944f2b7fad29d52c04a5264a082bcaad71d
-
-```
-git clone git@github.com:isaac-sim/IsaacLab.git
-
-sudo apt install cmake build-essential
-
-cd IsaacLab
-
-ln -s ${HOME}/tools/isaac-sim/ _isaac_sim     (请根据自己路径填写)
-
-./isaaclab.sh --conda unitree_sim_env
-
-conda activate  unitree_sim_env
-
-./isaaclab.sh --install
-
-```
-
-- 安装 unitree_sdk2_python
-
-```
-git clone https://github.com/unitreerobotics/unitree_sdk2_python
-
-cd unitree_sdk2_python
-
-pip3 install -e .
-
-```
-
-- 安装其他的依赖
-
-```
-pip install -r requirements.txt
-
-```
+### 2.2 Isaac Sim 5.0.0相关环境安装（RTX4080以及以上推荐安装）
+请参考<a href="doc/isaacsim5.0_install_zh.md"> isaacsim 5.0.0 环境安装步骤 </a> 进行环境安装
 
 ### 2.3 运行程序
 

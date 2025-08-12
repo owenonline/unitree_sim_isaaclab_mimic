@@ -284,7 +284,7 @@ if __name__ == "__main__":
             commands['height'] = default_height + commands['height']
             
             # convert to list format string [x_vel, y_vel, yaw_vel, height]
-            commands_list = [commands['x_vel'], commands['y_vel'], commands['yaw_vel'], commands['height']]
+            commands_list = [float(commands['x_vel']), -float(commands['y_vel']), -float(commands['yaw_vel']), float(commands['height'])]
             commands_str = str(commands_list)
             
             # only show when the command changes
