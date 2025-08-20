@@ -29,14 +29,14 @@ First execution will show: Do you accept the EULA? (Yes/No):  Yes
 
 -  **Install Isaac Lab**
 
-The current IsaacLab version used is 91ad4944f2b7fad29d52c04a5264a082bcaad71d
-
 ```
 git clone git@github.com:isaac-sim/IsaacLab.git
 
 sudo apt install cmake build-essential
 
 cd IsaacLab
+
+git checkout feature/isaacsim_5_0
 
 ./isaaclab.sh --install 
 

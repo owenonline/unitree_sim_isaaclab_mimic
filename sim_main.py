@@ -292,36 +292,60 @@ def main():
                 current_time = time.time()
                 loop_count += 1
                 if not args_cli.replay_data:
-                    env_state = env.scene.get_state()
-                    env_state_json =  sim_state_to_json(env_state)
-                    sim_state = {"init_state":env_state_json,"task_name":args_cli.task}
+                    try:
+                        env_state = env.scene.get_state()
+                        env_state_json =  sim_state_to_json(env_state)
+                        sim_state = {"init_state":env_state_json,"task_name":args_cli.task}
+                    except Exception as e:
+                        print(f"Failed to get env state: {e}")
+                        raise e
+                    try:
                     # sim_state = json.dumps(sim_state)
-                    sim_state_dds.write_sim_state_data(sim_state)
+                        sim_state_dds.write_sim_state_data(sim_state)
+                    except Exception as e:
+                        print(f"Failed to write sim state: {e}")
+                        raise e
                     # print(f"reset_pose_dds: {reset_pose_dds}")
-                    reset_pose_cmd = reset_pose_dds.get_reset_pose_command()
+                    try:
+                        reset_pose_cmd = reset_pose_dds.get_reset_pose_command()
+                    except Exception as e:
+                        print(f"Failed to get reset pose command: {e}")
+                        raise e
                     # # print(f"reset_pose_cmd: {reset_pose_cmd}")
                     if reset_pose_cmd is not None:
-                        reset_category = reset_pose_cmd.get("reset_category")
-                        # print(f"reset_category: {reset_category}")
-                        if (args_cli.enable_wholebody_dds and (reset_category == '1' or reset_category == '2')) or (not args_cli.enable_wholebody_dds and reset_category == '1'):
-                            print("reset object")
-                            env_cfg.event_manager.trigger("reset_object_self", env)
-                            reset_pose_dds.write_reset_pose_command(-1)
-                        elif reset_category == '2' and not args_cli.enable_wholebody_dds:
-                            print("reset all")
-                            env_cfg.event_manager.trigger("reset_all_self", env)
-                            reset_pose_dds.write_reset_pose_command(-1)
+                        try:
+                            reset_category = reset_pose_cmd.get("reset_category")
+                            # print(f"reset_category: {reset_category}")
+                            if (args_cli.enable_wholebody_dds and (reset_category == '1' or reset_category == '2')) or (not args_cli.enable_wholebody_dds and reset_category == '1'):
+                                print("reset object")
+                                env_cfg.event_manager.trigger("reset_object_self", env)
+                                reset_pose_dds.write_reset_pose_command(-1)
+                            elif reset_category == '2' and not args_cli.enable_wholebody_dds:
+                                print("reset all")
+                                env_cfg.event_manager.trigger("reset_all_self", env)
+                                reset_pose_dds.write_reset_pose_command(-1)
+                        except Exception as e:
+                            print(f"Failed to write reset pose command: {e}")
+                            raise e
                 else:
                     if action_provider.get_start_loop() and data_idx<len(data_json_list):
                         print(f"data_idx: {data_idx}")
-                        sim_state,task_name = action_provider.load_data(data_json_list[data_idx])
-                        if task_name!=args_cli.task:
-                            raise ValueError(f" The {task_name} in the dataset is different from the {args_cli.task} being executed .")
-                        env.reset_to(sim_state, torch.tensor([0], device=env.device), is_relative=True)
-                        env.sim.reset()
-                        time.sleep(1)
-                        action_provider.start_replay()
-                        data_idx+=1
+                        try:
+                            sim_state,task_name = action_provider.load_data(data_json_list[data_idx])
+                            if task_name!=args_cli.task:
+                                raise ValueError(f" The {task_name} in the dataset is different from the {args_cli.task} being executed .")
+                        except Exception as e:
+                            print(f"Failed to load data: {e}")
+                            raise e
+                        try:
+                            env.reset_to(sim_state, torch.tensor([0], device=env.device), is_relative=True)
+                            env.sim.reset()
+                            time.sleep(1)
+                            action_provider.start_replay()
+                            data_idx+=1
+                        except Exception as e:
+                            print(f"Failed to start replay: {e}")
+                            raise e
                 # print(f"env_state: {env_state}")
                 # calculate instantaneous loop time
                 loop_dt = current_time - last_loop_time

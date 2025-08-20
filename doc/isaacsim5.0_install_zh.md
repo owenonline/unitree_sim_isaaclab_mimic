@@ -39,6 +39,8 @@ sudo apt install cmake build-essential
 
 cd IsaacLab
 
+git checkout feature/isaacsim_5_0
+
 ./isaaclab.sh --install 
 
 ```
