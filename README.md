@@ -139,7 +139,7 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 - --enable_gripper_dds/--enable_dex3_dds: Represent enabling DDS for two-finger gripper/three-finger dexterous hand respectively  
 - --robot_type: Robot type, currently has 29-DOF unitree g1 (g129)
 
-**Note:** If you need to control robot movement, please refer to `send_commands_8bit.py` or `send_commands_keyboard.py` to publish control commands, or you can use them directly. Please note that only tasks marked with Wholebody are mobile tasks and can control the robot's movement.
+**Note:** If you need to control robot movement, please refer to `send_commands_8bit.py` or `send_commands_keyboard.py` to publish control commands, or you can use them directly. Please note that only tasks marked with `Wholebody` are mobile tasks and can control the robot's movement.
 
 #### 2.3.3 Data Replay
 
