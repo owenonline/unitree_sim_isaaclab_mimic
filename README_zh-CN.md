@@ -137,7 +137,7 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 - --enable_gripper_dds/--enable_dex3_dds: 分别代表启用二指夹爪/三指灵巧手的dds
 - --robot_type: 机器人类型，目前有29自由度的unitree g1(g129)
 
-**注意:** 如需要控制机器人移动，请参考`send_commands_8bit.py` 或者 `send_commands_keyboard.py` 发布控制命令，也可以直接使用。
+**注意:** 如需要控制机器人移动，请参考`send_commands_8bit.py` 或者 `send_commands_keyboard.py` 发布控制命令，也可以直接使用。但是请注意只有带有`Wholebody`标识的才是移动型任务，才能控制机器人移动。
 
 #### 2.3.3 数据回放
 
