@@ -13,6 +13,7 @@ from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.utils import configclass
 from isaaclab.assets import ArticulationCfg
 from . import mdp
@@ -91,6 +92,10 @@ class TerminationsCfg:
     success = DoneTerm(func=mdp.reset_object_estimate)# use task completion check function
 
 @configclass
+class RewardsCfg:
+    reward = RewTerm(func=mdp.compute_reward,weight=1.0)
+
+@configclass
 class EventCfg:
     reset_object = EventTermCfg(
         func=mdp.reset_root_state_uniform,  # use uniform distribution reset function
@@ -128,7 +133,7 @@ class PickPlaceG129InspireBaseFixEnvCfg(ManagerBasedRLEnvCfg):
     terminations: TerminationsCfg = TerminationsCfg()    # termination configuration
     events = EventCfg()                                  # event configuration
     commands = None # command manager
-    rewards = None # reward manager
+    rewards: RewardsCfg = RewardsCfg()  # reward manager
     curriculum = None # curriculum manager
     def __post_init__(self):
         """Post initialization."""

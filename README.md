@@ -153,6 +153,9 @@ python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G
 
 **Note:** The dataset format used here is consistent with the one recorded via teleoperation in [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate) .
 
+**Note:** For task-discrete rewards, you can use the `get_step_reward_value` function to retrieve them.
+
+
 #### 2.3.4 Data Generation
 During data replay, by modifying lighting conditions and camera parameters and re-capturing image data, more diverse visual features can be generated for data augmentation, thereby improving the model’s generalization ability.
 ```

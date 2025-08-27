@@ -45,7 +45,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
     red_block = RigidObjectCfg(
         prim_path="/World/envs/env_.*/Red_block",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-4.25, -4.05, 0.84],
+            pos= [-4.1, -4.08, 0.84],
             rot=[1, 0, 0, 0]
         ),
         spawn=sim_utils.CuboidCfg(
@@ -76,7 +76,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
     yellow_block = RigidObjectCfg(
         prim_path="/World/envs/env_.*/Yellow_block",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-4.18, -4.12, 0.84],
+            pos= [-4.25, -4.05, 0.84],
             rot=[1, 0, 0, 0]
         ),
         spawn=sim_utils.CuboidCfg(
@@ -106,7 +106,7 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
     green_block = RigidObjectCfg(
         prim_path="/World/envs/env_.*/Green_block",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-4.1, -4.08, 0.84],
+            pos=  [-4.18, -4.12, 0.84] ,
             rot=[1, 0, 0, 0]
         ),
         spawn=sim_utils.CuboidCfg(
@@ -145,8 +145,11 @@ class TableRedGreenYellowBlockSceneCfg(InteractiveSceneCfg): # inherit from the 
     light = AssetBaseCfg(
         prim_path="/World/light",   # light in the scene
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), # light color (white)
-                                     intensity=3000.0),    # light intensity
+                                     intensity=500.0),    # light intensity
     )
+
+
+
 
 
 

@@ -36,7 +36,7 @@ parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexte
 parser.add_argument("--enable_inspire_dds", action="store_true", help="enable inspire hand DDS")
 parser.add_argument("--stats_interval", type=float, default=10.0, help="statistics print interval (seconds)")
 
-parser.add_argument("--file_path", type=str, default="xr_teleoperate/teleop/utils/data", help="file path (when action_source=file)")
+parser.add_argument("--file_path", type=str, default="/home/unitree/newDisk/sim-data/Placewoodenblock", help="file path (when action_source=file)")
 parser.add_argument("--generate_data_dir", type=str, default="./data", help="save data dir")
 parser.add_argument("--generate_data", action="store_true", default=False, help="generate data")
 parser.add_argument("--rerun_log", action="store_true", default=False, help="rerun log")
@@ -50,7 +50,7 @@ parser.add_argument("--step_hz", type=int, default=500, help="control frequency"
 parser.add_argument("--enable_profiling", action="store_true", default=True, help="enable performance analysis")
 parser.add_argument("--profile_interval", type=int, default=500, help="performance analysis report interval (steps)")
 
-parser.add_argument("--model_path", type=str, default="assets/model/policy.onnx", help="model path")
+parser.add_argument("--model_path", type=str, default="assets/model/policy2.onnx", help="model path")
 parser.add_argument("--enable_wholebody_dds", action="store_true", default=False, help="enable wh dds")
 
 # add AppLauncher parameters
@@ -86,7 +86,7 @@ from tools.data_json_load import sim_state_to_json
 from dds.sim_state_dds import *
 from action_provider.create_action_provider import create_action_provider
 from tools.get_stiffness import get_robot_stiffness_from_env
-
+from tools.get_reward import get_step_reward_value,get_current_rewards
 
 def setup_signal_handlers(controller,dds_manager=None):
     """set signal handlers"""
@@ -174,9 +174,9 @@ def main():
     if args_cli.modify_light:
         update_light(
             prim_path="/World/light",
-            color=(1.0, 0.8, 0.6),
-            intensity=20000.0,
-            position=(1.0, 2.0, 3.0),
+            color=(0.75, 0.75, 0.75),
+            intensity=500.0,
+            # position=(1.0, 2.0, 3.0),
             radius=0.1,
             enabled=True,
             cast_shadows=True
@@ -312,6 +312,14 @@ def main():
                         print(f"Failed to get reset pose command: {e}")
                         raise e
                     # # print(f"reset_pose_cmd: {reset_pose_cmd}")
+                    # Compute current reward values manually if needed for debugging
+                    try:
+                        current_reward = get_step_reward_value(env)
+                        print(f"reward: {current_reward}")
+                    except Exception as e:
+                        print(f"奖励计算失败: {e}")
+                        pass
+                    
                     if reset_pose_cmd is not None:
                         try:
                             reset_category = reset_pose_cmd.get("reset_category")

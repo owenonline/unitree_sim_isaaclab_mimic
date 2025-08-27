@@ -13,6 +13,7 @@ from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.utils import configclass
 from isaaclab.assets import ArticulationCfg
 from . import mdp
@@ -95,6 +96,10 @@ class TerminationsCfg:
     success = DoneTerm(func=mdp.reset_object_estimate)# use task completion check function
 
 @configclass
+class RewardsCfg:
+    reward = RewTerm(func=mdp.compute_reward,weight=1.0)
+
+@configclass
 class EventCfg:
     reset_object = EventTermCfg(
         func=mdp.reset_root_state_uniform,  # use uniform distribution reset function
@@ -102,7 +107,7 @@ class EventCfg:
         params={
             # position range parameter
             "pose_range": {
-                "x": [-0.05, 0.05],  # x axis position range: -0.05 to 0.0 meter
+                "x": [-0.1, 0.1],  # x axis position range: -0.05 to 0.0 meter
                 "y": [-0.05, 0.05],   # y axis position range: 0.0 to 0.05 meter
             },
             # speed range parameter (empty dictionary means using default value)
@@ -132,7 +137,7 @@ class PickPlaceG129DEX1BaseFixEnvCfg(ManagerBasedRLEnvCfg):
     terminations: TerminationsCfg = TerminationsCfg()    # termination configuration
     events = EventCfg()                                  # event configuration
     commands = None # command manager
-    rewards = None # reward manager
+    rewards: RewardsCfg = RewardsCfg()  # reward manager
     curriculum = None # curriculum manager
     def __post_init__(self):
         """Post initialization."""
@@ -160,7 +165,7 @@ class PickPlaceG129DEX1BaseFixEnvCfg(ManagerBasedRLEnvCfg):
             func=lambda env: base_mdp.reset_root_state_uniform(
                 env,
                 torch.arange(env.num_envs, device=env.device),
-                pose_range={"x": [-0.05, 0.05], "y": [-0.05, 0.05]},
+                pose_range={"x": [-0.1, 0.1], "y": [-0.05, 0.05]},
                 velocity_range={},
                 asset_cfg=SceneEntityCfg("object"),
             )
@@ -171,3 +176,6 @@ class PickPlaceG129DEX1BaseFixEnvCfg(ManagerBasedRLEnvCfg):
                 env,
                 torch.arange(env.num_envs, device=env.device))
         ))
+
+
+#
