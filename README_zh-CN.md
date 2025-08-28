@@ -124,6 +124,10 @@
 使用下面的命令下载需要的资产文件
 
 ```
+sudo apt update
+
+sudo apt install git-lfs
+
 . fetch_assets.sh
 ```
 

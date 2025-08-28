@@ -126,6 +126,10 @@ Please refer to the <a href="doc/isaacsim5.0_install.md">Isaac Sim 5.0.0 Environ
 Use the following command to download the required asset files
 
 ```
+sudo apt update
+
+sudo apt install git-lfs
+
 . fetch_assets.sh
 ```
 
