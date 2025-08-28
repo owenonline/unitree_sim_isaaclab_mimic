@@ -107,6 +107,8 @@ sudo apt install cmake build-essential
 
 cd IsaacLab
 
+git checkout v2.2.0
+
 ln -s ${HOME}/tools/isaac-sim/ _isaac_sim     (请根据自己路径填写)
 
 ./isaaclab.sh --conda unitree_sim_env
