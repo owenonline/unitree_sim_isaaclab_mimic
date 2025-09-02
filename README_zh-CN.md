@@ -4,6 +4,9 @@
   <p align="center">
     <a href="README.md"> English </a> | <a >中文</a> 
   </p>
+    <p align="center">
+    <a href="https://discord.gg/ZwcVwxv5rq" target="_blank"><img src="https://img.shields.io/badge/-Discord-5865F2?style=flat&logo=Discord&logoColor=white" alt="Unitree LOGO"></a>
+  </p>
 </div>
 
 ## 重要事情提前说

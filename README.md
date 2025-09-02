@@ -4,6 +4,7 @@
   <p align="center">
     <a> English </a> | <a href="README_zh-CN.md">中文</a> 
   </p>
+  <a href="https://discord.gg/ZwcVwxv5rq" target="_blank"><img src="https://img.shields.io/badge/-Discord-5865F2?style=flat&logo=Discord&logoColor=white" alt="Unitree LOGO"></a>
 </div>
 
 ## Important Notes First
