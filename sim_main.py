@@ -50,7 +50,7 @@ parser.add_argument("--step_hz", type=int, default=500, help="control frequency"
 parser.add_argument("--enable_profiling", action="store_true", default=True, help="enable performance analysis")
 parser.add_argument("--profile_interval", type=int, default=500, help="performance analysis report interval (steps)")
 
-parser.add_argument("--model_path", type=str, default="assets/model/policy2.onnx", help="model path")
+parser.add_argument("--model_path", type=str, default="assets/model/policy.onnx", help="model path")
 parser.add_argument("--enable_wholebody_dds", action="store_true", default=False, help="enable wh dds")
 
 # add AppLauncher parameters

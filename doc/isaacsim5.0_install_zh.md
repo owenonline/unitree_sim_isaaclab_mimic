@@ -144,3 +144,38 @@ pip install -r requirements.txt
 OSError: /home/unitree/tools/anaconda3/envs/env_isaaclab_tem/bin/../lib/libstdc++.so.6: version GLIBCXX_3.4.30' not found (required by /home/unitree/tools/anaconda3/envs/env_isaaclab_tem/lib/python3.11/site-packages/omni/libcarb.so)
 ```
 解决: conda install -c conda-forge libstdcxx-ng
+
+- 2 安装unitree_sdk2_python 问题
+
+如果在安装unitree_sdk2_python 遇到以下问题
+
+```
+Could not locate cyclonedds. Try to set CYCLONEDDS_HOME or CMAKE_PREFIX_PATH
+
+```
+或
+
+```
+Collecting cyclonedds==0.10.2 (from unitree_sdk2py==1.0.1)
+  Downloading cyclonedds-0.10.2.tar.gz (156 kB)
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... error
+  error: subprocess-exited-with-error
+  
+  × Getting requirements to build wheel did not run successfully.
+  │ exit code: 1
+  ╰─> [1 lines of output]
+      Could not locate cyclonedds. Try to set CYCLONEDDS_HOME or CMAKE_PREFIX_PATH
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+error: subprocess-exited-with-error
+
+× Getting requirements to build wheel did not run successfully.
+│ exit code: 1
+╰─> See above for output.
+
+note: This error originates from a subprocess, and is likely not a problem with pip.
+```
+解决: 请参考[unitree_sdk2_python FAQ](https://github.com/unitreerobotics/unitree_sdk2_python?tab=readme-ov-file#faq)
+

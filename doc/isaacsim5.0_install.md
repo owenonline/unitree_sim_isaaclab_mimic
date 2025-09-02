@@ -137,3 +137,38 @@ OSError: /home/unitree/tools/anaconda3/envs/env_isaaclab_tem/bin/../lib/libstdc+
 ```
 **Solution:**
 `conda install -c conda-forge libstdcxx-ng`
+
+*  2 Installation Issue with `unitree_sdk2_python`
+
+If you encounter the following error when installing `unitree_sdk2_python`:
+
+```
+Could not locate cyclonedds. Try to set CYCLONEDDS_HOME or CMAKE_PREFIX_PATH
+```
+
+or
+
+```
+Collecting cyclonedds==0.10.2 (from unitree_sdk2py==1.0.1)
+  Downloading cyclonedds-0.10.2.tar.gz (156 kB)
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... error
+  error: subprocess-exited-with-error
+  
+  × Getting requirements to build wheel did not run successfully.
+  │ exit code: 1
+  ╰─> [1 lines of output]
+      Could not locate cyclonedds. Try to set CYCLONEDDS_HOME or CMAKE_PREFIX_PATH
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+error: subprocess-exited-with-error
+
+× Getting requirements to build wheel did not run successfully.
+│ exit code: 1
+╰─> See above for output.
+
+note: This error originates from a subprocess, and is likely not a problem with pip.
+```
+
+**Solution**: Please refer to the [unitree\_sdk2\_python FAQ](https://github.com/unitreerobotics/unitree_sdk2_python?tab=readme-ov-file#faq) for instructions.
