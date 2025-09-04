@@ -28,17 +28,23 @@ def compute_reward(
     post_max_height: float = 0.9,
 ) -> torch.Tensor:
    # when the object is not in the set return, reset
-    # Get object entity from the scene
+
+    interval = getattr(env, "_reward_interval", 1) or 1
+    counter = getattr(env, "_reward_counter", 0)
+    last = getattr(env, "_reward_last", None)
+    if interval > 1 and last is not None and counter % interval != 0:
+        env._reward_counter = counter + 1
+        return last
+
     # 1. get object entity from the scene
     object: RigidObject = env.scene[object_cfg.name]
     
-    # Extract wheel position relative to environment origin
     # 2. get object position
     wheel_x = object.data.root_pos_w[:, 0]         # x position
     wheel_y = object.data.root_pos_w[:, 1]        # y position
     wheel_height = object.data.root_pos_w[:, 2]   # z position (height)
-    # print(f"wheel_height: {wheel_height}")
-    # Check conditions for each environment (element-wise operations)
+
+    # element-wise operations
     done_x = (wheel_x < max_x) & (wheel_x > min_x)
     done_y = (wheel_y < max_y) & (wheel_y > min_y)
     done_height = (wheel_height > min_height)
@@ -57,5 +63,8 @@ def compute_reward(
     reward[~done] = -1.0  # Not in valid area
     reward[done_post] = 1.0  # In target post area
     reward[done & ~done_post] = 0.0  # In valid area but not target
-    
+
+
+    env._reward_last = reward
+    env._reward_counter = counter + 1
     return reward

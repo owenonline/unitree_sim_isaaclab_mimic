@@ -33,13 +33,18 @@ def compute_reward(
 ) -> torch.Tensor:
 
    # when the object is not in the set return, reset
-    # Get object entity from the scene
+    interval = getattr(env, "_reward_interval", 1) or 1
+    counter = getattr(env, "_reward_counter", 0)
+    last = getattr(env, "_reward_last", None)
+    if interval > 1 and last is not None and counter % interval != 0:
+        env._reward_counter = counter + 1
+        return last
+
     # 1. get object entity from the scene
     red_block: RigidObject = env.scene[red_block_cfg.name]
     yellow_block: RigidObject = env.scene[yellow_block_cfg.name]
     green_block: RigidObject = env.scene[green_block_cfg.name]
     
-    # Extract wheel position relative to environment origin
     # 2. get object position
     red_block_x = red_block.data.root_pos_w[:, 0]         # x position
     red_block_y = red_block.data.root_pos_w[:, 1]        # y position
@@ -117,5 +122,6 @@ def compute_reward(
     reward[all_in_area & first_block_in_area & second_block_in_area] = 0.6  # bottom and middle block correct
     reward[all_in_area & first_block_in_area & second_block_in_area & third_block_in_area] = 1.0  # perfect stack
 
-    
+    env._reward_last = reward
+    env._reward_counter = counter + 1
     return reward

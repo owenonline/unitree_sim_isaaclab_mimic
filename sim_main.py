@@ -4,7 +4,9 @@
 #!/usr/bin/env python3
 # main.py
 import os
-
+# import cProfile
+# import pstats
+# import io
 project_root = os.path.dirname(os.path.abspath(__file__))
 os.environ["PROJECT_ROOT"] = project_root
 
@@ -36,7 +38,7 @@ parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexte
 parser.add_argument("--enable_inspire_dds", action="store_true", help="enable inspire hand DDS")
 parser.add_argument("--stats_interval", type=float, default=10.0, help="statistics print interval (seconds)")
 
-parser.add_argument("--file_path", type=str, default="/home/unitree/newDisk/sim-data/Placewoodenblock", help="file path (when action_source=file)")
+parser.add_argument("--file_path", type=str, default="/home/unitree/newDisk/sim-data/text1/Placecylinder", help="file path (when action_source=file)")
 parser.add_argument("--generate_data_dir", type=str, default="./data", help="save data dir")
 parser.add_argument("--generate_data", action="store_true", default=False, help="generate data")
 parser.add_argument("--rerun_log", action="store_true", default=False, help="rerun log")
@@ -46,12 +48,32 @@ parser.add_argument("--modify_light",  action="store_true", default=False, help=
 parser.add_argument("--modify_camera",  action="store_true", default=False,    help="modify camera")
 
 # performance analysis parameters
-parser.add_argument("--step_hz", type=int, default=500, help="control frequency")
+parser.add_argument("--step_hz", type=int, default=100, help="control frequency")
 parser.add_argument("--enable_profiling", action="store_true", default=True, help="enable performance analysis")
 parser.add_argument("--profile_interval", type=int, default=500, help="performance analysis report interval (steps)")
 
 parser.add_argument("--model_path", type=str, default="assets/model/policy.onnx", help="model path")
+parser.add_argument("--reward_interval", type=int, default=10, help="step interval for reward calculation")
 parser.add_argument("--enable_wholebody_dds", action="store_true", default=False, help="enable wh dds")
+
+parser.add_argument("--physics_dt", type=float, default=None, help="physics time step, e.g., 0.005")
+parser.add_argument("--render_interval", type=int, default=None, help="GUI render interval steps")
+parser.add_argument("--camera_write_interval", type=int, default=None, help="camera write interval steps (>=1)")
+
+
+parser.add_argument("--no_render", action="store_true", default=True, help="disable GUI rendering")
+parser.add_argument("--solver_iterations", type=int, default=None, help="physx solver iteration count (e.g., 4)")
+parser.add_argument("--gravity_z", type=float, default=None, help="override gravity z (e.g., -9.8)")
+parser.add_argument("--skip_cvtcolor", action="store_true", default=False, help="skip cv2.cvtColor if upstream already BGR")
+
+parser.add_argument("--camera_jpeg", action="store_true", default=True, help="enable JPEG compression for camera frames")
+parser.add_argument("--camera_jpeg_quality", type=int, default=85, help="JPEG quality (1-100)")
+
+parser.add_argument("--physx_substeps", type=int, default=None, help="physx substeps per step")
+parser.add_argument("--camera_include", type=str, default="front_camera,left_wrist_camera,right_wrist_camera", help="comma-separated camera names to enable")
+parser.add_argument("--camera_exclude", type=str, default="world_camera", help="comma-separated camera names to disable")
+
+parser.add_argument("--env_reward_interval", type=int, default=5, help="environment reward compute interval (steps)")
 
 # add AppLauncher parameters
 AppLauncher.add_app_launcher_args(parser)
@@ -109,6 +131,8 @@ def setup_signal_handlers(controller,dds_manager=None):
 
 def main():
     """main function"""
+    # profiler = cProfile.Profile()
+    # profiler.enable()
     import os
     import atexit
     try:
@@ -146,7 +170,122 @@ def main():
     print("\ncreate environment...")
     try:
         env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+        try:
+            sensors_dict = getattr(env.scene, "sensors", {})
+            if sensors_dict:
+                print("Sensors in the environment:")
+                for name, sensor in sensors_dict.items():
+                    print(name, sensor)
+                print("="*60)
+        except Exception as e:
+            print(f"[sim] failed to list sensors: {e}")
         print(f"\ncreate environment success ...")
+        try:
+            env._reward_interval = max(1, int(args_cli.env_reward_interval))
+            env._reward_counter = 0
+            env._reward_last = None
+            print(f"[env] reward compute interval set to {env._reward_interval} steps")
+        except Exception as e:
+            print(f"[env] failed to set reward interval: {e}")
+        if args_cli.physics_dt is not None:
+            try:
+                env.sim.set_substep_time(args_cli.physics_dt)
+                print(f"[sim] physics dt set to {args_cli.physics_dt}")
+            except Exception:
+                try:
+                    env.sim.dt = args_cli.physics_dt
+                    print(f"[sim] physics dt assigned to env.sim.dt={args_cli.physics_dt}")
+                except Exception as e:
+                    print(f"[sim] failed to set physics dt: {e}")
+        if args_cli.render_interval is not None:
+            try:
+                env.sim.render_interval = int(args_cli.render_interval)
+                print(f"[sim] render_interval set to {env.sim.render_interval}")
+            except Exception as e:
+                print(f"[sim] failed to set render_interval: {e}")
+        if args_cli.no_render:
+            try:
+                env.sim.render_interval = 1_000_000
+                env.sim.render_mode = "offscreen"
+                print("[sim] GUI rendering disabled via large render_interval")
+            except Exception as e:
+                print(f"[sim] failed to disable rendering: {e}")
+        if args_cli.camera_write_interval is not None:
+            try:
+                import tasks.common_observations.camera_state as cam_state
+                cam_state._camera_cache['write_interval_steps'] = max(1, int(args_cli.camera_write_interval))
+                print(f"[camera] write interval steps set to {cam_state._camera_cache['write_interval_steps']}")
+            except Exception as e:
+                print(f"[camera] failed to set write interval: {e}")
+
+        try:
+            if args_cli.solver_iterations is not None:
+                env.sim.physx.solver_iteration_count = int(args_cli.solver_iterations)
+                print(f"[sim] solver_iteration_count={env.sim.physx.solver_iteration_count}")
+            if args_cli.physx_substeps is not None:
+                try:
+                    env.sim.physx.substeps = int(args_cli.physx_substeps)
+                except Exception:
+                    try:
+                        env.sim.set_substeps(int(args_cli.physx_substeps))
+                    except Exception:
+                        pass
+                print(f"[sim] physx_substeps set to {args_cli.physx_substeps}")
+            if args_cli.gravity_z is not None:
+                g = float(args_cli.gravity_z)
+                env.sim.physx.gravity = (0.0, 0.0, g)
+                print(f"[sim] gravity set to {env.sim.physx.gravity}")
+        except Exception as e:
+            print(f"[sim] failed to set physx params: {e}")
+        if args_cli.skip_cvtcolor:
+            os.environ["CAMERA_SKIP_CVTCOLOR"] = "1"
+        try:
+            import tasks.common_observations.camera_state as cam_state
+            enable_jpeg = bool(args_cli.camera_jpeg) or (os.getenv("CAMERA_JPEG") == "1")
+            jpeg_quality = int(args_cli.camera_jpeg_quality if args_cli.camera_jpeg else os.getenv("CAMERA_JPEG_QUALITY", args_cli.camera_jpeg_quality))
+            cam_state.set_writer_options(enable_jpeg=enable_jpeg, jpeg_quality=jpeg_quality, skip_cvtcolor=args_cli.skip_cvtcolor)
+            include = [n.strip() for n in (args_cli.camera_include or "").split(',') if n.strip()]
+            exclude = [n.strip() for n in (args_cli.camera_exclude or "").split(',') if n.strip()]
+            try:
+                cam_state.set_camera_allowlist(include)
+            except Exception:
+                pass
+            try:
+                sensors_dict = getattr(env.scene, "sensors", {})
+                for name, sensor in sensors_dict.items():
+                    lname = name.lower()
+                    if "camera" not in lname:
+                        continue
+                    if exclude and name in exclude:
+                        for attr_name, value in [("enabled", False), ("is_enabled", False)]:
+                            if hasattr(sensor, attr_name):
+                                try:
+                                    setattr(sensor, attr_name, value)
+                                except Exception:
+                                    pass
+                        for meth in ("set_active", "disable", "pause"):
+                            if hasattr(sensor, meth):
+                                try:
+                                    getattr(sensor, meth)(False)
+                                except Exception:
+                                    pass
+                        for attr_name in ("update_period", "_update_period"):
+                            if hasattr(sensor, attr_name):
+                                try:
+                                    setattr(sensor, attr_name, 1e6)
+                                except Exception:
+                                    pass
+                    elif include and name not in include:
+                        for attr_name in ("update_period", "_update_period"):
+                            if hasattr(sensor, attr_name):
+                                try:
+                                    setattr(sensor, attr_name, 1e6)
+                                except Exception:
+                                    pass
+            except Exception as e:
+                print(f"[camera] failed to tune sensors: {e}")
+        except Exception as e:
+            print(f"[camera] failed to apply writer options: {e}")
     except Exception as e:
         print(f"\nFailed to create environment: {e}")
         return
@@ -285,6 +424,9 @@ def main():
         loop_count = 0
         last_loop_time = time.time()
         recent_loop_times = []  # for calculating moving average frequency
+        
+        
+        reward_interval = max(1, args_cli.reward_interval)
 
         # use torch.inference_mode() and exception suppression
         with contextlib.suppress(KeyboardInterrupt), torch.inference_mode():
@@ -314,8 +456,9 @@ def main():
                     # # print(f"reset_pose_cmd: {reset_pose_cmd}")
                     # Compute current reward values manually if needed for debugging
                     try:
-                        current_reward = get_step_reward_value(env)
-                        print(f"reward: {current_reward}")
+                        if (loop_count % reward_interval) == 0:
+                            current_reward = get_step_reward_value(env)
+                            # print(f"reward: {current_reward}")
                     except Exception as e:
                         print(f"奖励计算失败: {e}")
                         pass
@@ -417,7 +560,12 @@ def main():
         
         env.close()
         print("cleanup completed")
+    # profiler.disable()
+    # s = io.StringIO()
+    # ps = pstats.Stats(profiler, stream=s).strip_dirs().sort_stats("time")
+    # ps.print_stats(30)  # 打印耗时前20的函数
 
+    # print(s.getvalue())
 
 if __name__ == "__main__":
     try:
@@ -481,7 +629,7 @@ if __name__ == "__main__":
         # Force exit
         os._exit(0)
 
-# python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_dex1_dds --robot_type g129
+# python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint   --enable_dex1_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-Cylinder-G129-Dex3-Joint    --enable_dex3_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-Cylinder-G129-Inspire-Joint    --enable_inspire_dds --robot_type g129
 

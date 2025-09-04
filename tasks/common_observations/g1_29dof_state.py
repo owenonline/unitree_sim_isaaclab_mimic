@@ -85,6 +85,20 @@ from dds.dds_master import dds_manager
 _g1_robot_dds = None
 _dds_initialized = False
 
+# 观测缓存：索引张量与DDS限速（50FPS）+ 预分配缓冲
+_obs_cache = {
+    "device": None,
+    "batch": None,
+    "boy_idx_t": None,
+    "boy_idx_batch": None,
+    "pos_buf": None,
+    "vel_buf": None,
+    "torque_buf": None,
+    "combined_buf": None,
+    "dds_last_ms": 0,
+    "dds_min_interval_ms": 20,
+}
+
 def _get_g1_robot_dds_instance():
     """get the DDS instance, delay initialization"""
     global _g1_robot_dds, _dds_initialized
@@ -137,49 +151,71 @@ def get_robot_boy_joint_states(
     joint_pos = env.scene["robot"].data.joint_pos
     joint_vel = env.scene["robot"].data.joint_vel
     joint_torque = env.scene["robot"].data.applied_torque  # use applied_torque to get joint torques
-    
-    # get the body joint indices
-    # boy_joint_names = get_robot_boy_joint_names()
-    # print(f"boy_joint_names: {boy_joint_names}")
-    # all_joint_names = env.scene["robot"].data.joint_names
-    # print(f"all_joint_names: {all_joint_names}")
-    # boy_joint_indices = [all_joint_names.index(name) for name in boy_joint_names]
-    # print(f"boy_joint_indices: {boy_joint_indices}")
-    boy_joint_indices = [0, 3, 6, 9, 13, 17, 1, 4, 7, 10, 14, 18, 2, 5, 8, 11, 15, 19, 21, 23, 25, 27, 12, 16, 20, 22, 24, 26, 28]
+    device = joint_pos.device
+    batch = joint_pos.shape[0]
 
+    # 预计算并缓存索引张量（列索引）
+    global _obs_cache
+    if _obs_cache["device"] != device or _obs_cache["boy_idx_t"] is None:
+        boy_joint_indices = [0, 3, 6, 9, 13, 17, 1, 4, 7, 10, 14, 18, 2, 5, 8, 11, 15, 19, 21, 23, 25, 27, 12, 16, 20, 22, 24, 26, 28]
+        _obs_cache["boy_idx_t"] = torch.tensor(boy_joint_indices, dtype=torch.long, device=device)
+        _obs_cache["device"] = device
+        _obs_cache["batch"] = None  # force re-init batch-shaped buffers
 
+    idx_t = _obs_cache["boy_idx_t"]
+    n = idx_t.numel()
 
-    # print(f"boy_joint_indices: {boy_joint_indices}")
-    # extract the joint states in the specified order
-    boy_joint_pos = joint_pos[:, boy_joint_indices]
-    boy_joint_vel = joint_vel[:, boy_joint_indices]
-    boy_joint_torque = joint_torque[:, boy_joint_indices]  # extract joint torques
-    
-    # concatenate the position, velocity and torque into a tensor
-    combined_states = torch.cat([boy_joint_pos, boy_joint_vel, boy_joint_torque], dim=1)
-    
-    # write to DDS (only write the data of the first batch)
-    if enable_dds and combined_states.shape[0] > 0:
+    # 预分配/复用 batch 形状索引与输出缓冲
+    if _obs_cache["batch"] != batch or _obs_cache["boy_idx_batch"] is None:
+        _obs_cache["boy_idx_batch"] = idx_t.unsqueeze(0).expand(batch, n)
+        _obs_cache["pos_buf"] = torch.empty(batch, n, device=device, dtype=joint_pos.dtype)
+        _obs_cache["vel_buf"] = torch.empty(batch, n, device=device, dtype=joint_pos.dtype)
+        _obs_cache["torque_buf"] = torch.empty(batch, n, device=device, dtype=joint_pos.dtype)
+        _obs_cache["combined_buf"] = torch.empty(batch, n * 3, device=device, dtype=joint_pos.dtype)
+        _obs_cache["batch"] = batch
+
+    idx_batch = _obs_cache["boy_idx_batch"]
+    pos_buf = _obs_cache["pos_buf"]
+    vel_buf = _obs_cache["vel_buf"]
+    torque_buf = _obs_cache["torque_buf"]
+    combined_buf = _obs_cache["combined_buf"]
+
+    # 使用 gather(out=...) 填充，避免新张量分配
+    try:
+        torch.gather(joint_pos, 1, idx_batch, out=pos_buf)
+        torch.gather(joint_vel, 1, idx_batch, out=vel_buf)
+        torch.gather(joint_torque, 1, idx_batch, out=torque_buf)
+    except TypeError:
+        pos_buf.copy_(torch.gather(joint_pos, 1, idx_batch))
+        vel_buf.copy_(torch.gather(joint_vel, 1, idx_batch))
+        torque_buf.copy_(torch.gather(joint_torque, 1, idx_batch))
+
+    # 组合为一个缓冲，避免 cat 分配
+    combined_buf[:, 0:n].copy_(pos_buf)
+    combined_buf[:, n:2*n].copy_(vel_buf)
+    combined_buf[:, 2*n:3*n].copy_(torque_buf)
+
+    # write to DDS（限速发布，避免高频CPU拷贝）
+    if enable_dds and combined_buf.shape[0] > 0:
         try:
-
-            g1_robot_dds = _get_g1_robot_dds_instance()
-            if g1_robot_dds:
-                # get the IMU data for DDS
-                imu_data = get_robot_imu_data(env)
-                if imu_data.shape[0] > 0:
-                    # write the robot state to shared memory
-                    g1_robot_dds.write_robot_state(
-                        boy_joint_pos[0][:],  
-                        boy_joint_vel[0][:],  
-                        boy_joint_torque[0][:],  
-                        imu_data[0] 
-                    )
-            else:
-                print(f"g1_robot_dds is not initialized")
+            import time
+            now_ms = int(time.time() * 1000)
+            if now_ms - _obs_cache["dds_last_ms"] >= _obs_cache["dds_min_interval_ms"]:
+                g1_robot_dds = _get_g1_robot_dds_instance()
+                if g1_robot_dds:
+                    imu_data = get_robot_imu_data(env)
+                    if imu_data.shape[0] > 0:
+                        g1_robot_dds.write_robot_state(
+                            pos_buf[0].contiguous().cpu().numpy(),
+                            vel_buf[0].contiguous().cpu().numpy(),
+                            torque_buf[0].contiguous().cpu().numpy(),
+                            imu_data[0].contiguous().cpu().numpy(),
+                        )
+                        _obs_cache["dds_last_ms"] = now_ms
         except Exception as e:
             print(f"[g1_state] Error writing robot state to DDS: {e}")
     
-    return combined_states
+    return combined_buf
 
 
 def get_gravity_quaternion_from_root_state(env: ManagerBasedRLEnv):

@@ -75,3 +75,6 @@ def create_dds_objects_replay(args_cli,env):
         dds_manager.register_object("inspire", inspire)
         publish_names.append("inspire")
         subscribe_names.append("inspire")
+
+    dds_manager.start_publishing(publish_names)
+    dds_manager.start_subscribing(subscribe_names)

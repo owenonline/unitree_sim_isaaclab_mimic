@@ -8,6 +8,7 @@ include the basic configuration for different types of cameras, support scene-sp
 import isaaclab.sim as sim_utils
 from isaaclab.sensors import CameraCfg
 from isaaclab.utils import configclass
+import os
 
 
 @configclass
@@ -21,9 +22,9 @@ class CameraBaseCfg:
     def get_camera_config(
         cls,
         prim_path: str = "/World/envs/env_.*/Robot/d435_link/front_cam",
-        update_period: float = 0.01,
+        update_period: float = 0.02,
         height: int = 480,
-        width: int = 640,
+        width: int =  640,
         focal_length: float = 7.6,
         focus_distance: float = 400.0,
         horizontal_aperture: float = 20.0,
@@ -51,8 +52,8 @@ class CameraBaseCfg:
             CameraCfg: camera configuration
         """
         if data_types is None:
-            data_types = ["rgb", "distance_to_image_plane"]
-        
+            data_types = ["rgb"]
+
         return CameraCfg(
             prim_path=prim_path,
             update_period=update_period,
@@ -102,8 +103,8 @@ class CameraPresets:
             prim_path="/World/envs/env_.*/Robot/left_hand_base_link/left_wrist_camera",
             height=480,
             width=640,
-            update_period=0.01,
-            data_types=["rgb", "distance_to_image_plane"],
+            update_period=0.02,
+            data_types=["rgb"],
             focal_length=12,
             focus_distance=400.0,
             horizontal_aperture=20.0,
@@ -118,8 +119,8 @@ class CameraPresets:
             prim_path="/World/envs/env_.*/Robot/right_hand_base_link/right_wrist_camera",
             height=480,
             width=640,
-            update_period=0.01,
-            data_types=["rgb", "distance_to_image_plane"],
+            update_period=0.02,
+            data_types=["rgb"],
             focal_length=12,
             focus_distance=400.0,
             horizontal_aperture=20.0,
@@ -134,8 +135,8 @@ class CameraPresets:
             prim_path="/World/envs/env_.*/Robot/left_hand_camera_base_link/left_wrist_camera",
             height=480,
             width=640,
-            update_period=0.01,
-            data_types=["rgb", "distance_to_image_plane"],
+            update_period=0.02,
+            data_types=["rgb"],
             focal_length=12.0,
             focus_distance=400.0,
             horizontal_aperture=20.0,
@@ -150,8 +151,8 @@ class CameraPresets:
             prim_path="/World/envs/env_.*/Robot/right_hand_camera_base_link/right_wrist_camera",
             height=480,
             width=640,
-            update_period=0.01,
-            data_types=["rgb", "distance_to_image_plane"],
+            update_period=0.02,
+            data_types=["rgb"],
             focal_length=12.0,
             focus_distance=400.0,
             horizontal_aperture=20.0,
@@ -167,8 +168,8 @@ class CameraPresets:
             prim_path="/World/envs/env_.*/Robot/left_hand_camera_base_link/left_wrist_camera",
             height=480,
             width=640,
-            update_period=0.01,
-            data_types=["rgb", "distance_to_image_plane"],
+            update_period=0.02,
+            data_types=["rgb"],
             focal_length=12.0,
             focus_distance=400.0,
             horizontal_aperture=20.0,
@@ -183,8 +184,8 @@ class CameraPresets:
             prim_path="/World/envs/env_.*/Robot/right_hand_camera_base_link/right_wrist_camera",
             height=480,
             width=640,
-            update_period=0.01,
-            data_types=["rgb", "distance_to_image_plane"],
+            update_period=0.02,
+            data_types=["rgb"],
             focal_length=12.0,
             focus_distance=400.0,
             horizontal_aperture=20.0,
