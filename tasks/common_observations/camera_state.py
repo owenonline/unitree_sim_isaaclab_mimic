@@ -30,7 +30,7 @@ def set_writer_options(enable_jpeg: bool = False, jpeg_quality: int = 85, skip_c
     except Exception as e:
         print(f"[camera_state] failed to set writer options: {e}")
 
-# 性能优化：缓存变量，避免重复查找
+
 _camera_cache = {
     'available_cameras': None,
     'camera_keys': None,
@@ -39,7 +39,7 @@ _camera_cache = {
     'write_interval_steps': 2,
 }
 
-# 全局占位张量（仅创建一次并复用）
+
 _return_placeholder = None
 _async_queue = None
 _async_thread = None
@@ -145,7 +145,7 @@ def get_camera_image(
             for i, camera_name in enumerate(available_cameras[:3]):
                 camera_image = env.scene[camera_name].data.output["rgb"][0]
                 
-                # 性能优化：减少GPU到CPU的拷贝
+               
                 if camera_image.device.type == 'cpu':
                     numpy_image = camera_image.numpy()
                 else:
@@ -162,7 +162,7 @@ def get_camera_image(
     if images and _camera_cache['frame_step'] == 0:
         _ensure_async_started()
         try:
-            # 覆盖旧帧，始终保持最新
+            
             if _async_queue.full():
                 _async_queue.get_nowait()
             _async_queue.put_nowait(images)
