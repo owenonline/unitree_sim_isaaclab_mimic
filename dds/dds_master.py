@@ -57,7 +57,7 @@ class DDSManager:
             return True
         
         try:
-            ChannelFactoryInitialize(2)
+            ChannelFactoryInitialize(1)
             self.dds_initialized = True
             print("[DDSManager] DDS system initialized")
             return True
