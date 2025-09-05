@@ -4,9 +4,7 @@
 #!/usr/bin/env python3
 # main.py
 import os
-import cProfile
-import pstats
-import io
+
 project_root = os.path.dirname(os.path.abspath(__file__))
 os.environ["PROJECT_ROOT"] = project_root
 
@@ -131,8 +129,11 @@ def setup_signal_handlers(controller,dds_manager=None):
 
 def main():
     """main function"""
-    profiler = cProfile.Profile()
-    profiler.enable()
+    # import cProfile
+    # import pstats
+    # import io
+    # profiler = cProfile.Profile()
+    # profiler.enable()
     import os
     import atexit
     try:
@@ -560,12 +561,12 @@ def main():
         
         env.close()
         print("cleanup completed")
-    profiler.disable()
-    s = io.StringIO()
-    ps = pstats.Stats(profiler, stream=s).strip_dirs().sort_stats("time")
-    ps.print_stats(30)  # 打印耗时前20的函数
+    # profiler.disable()
+    # s = io.StringIO()
+    # ps = pstats.Stats(profiler, stream=s).strip_dirs().sort_stats("time")
+    # ps.print_stats(30)  # 打印耗时前20的函数
 
-    print(s.getvalue())
+    # print(s.getvalue())
 
 if __name__ == "__main__":
     try:
