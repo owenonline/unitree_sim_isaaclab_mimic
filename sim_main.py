@@ -72,6 +72,7 @@ parser.add_argument("--camera_include", type=str, default="front_camera,left_wri
 parser.add_argument("--camera_exclude", type=str, default="world_camera", help="comma-separated camera names to disable")
 
 parser.add_argument("--env_reward_interval", type=int, default=5, help="environment reward compute interval (steps)")
+parser.add_argument("--seed", type=int, default=42, help="environment seed")
 
 # add AppLauncher parameters
 AppLauncher.add_app_launcher_args(parser)
@@ -170,7 +171,9 @@ def main():
     # create environment
     print("\ncreate environment...")
     try:
+        env_cfg.seed = args_cli.seed
         env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+        env.seed(args_cli.seed)
         try:
             sensors_dict = getattr(env.scene, "sensors", {})
             if sensors_dict:

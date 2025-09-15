@@ -84,11 +84,11 @@ class TableRedBlockSceneCfg(InteractiveSceneCfg): # inherit from the interactive
 
     # Lights
     # 4. light configuration
-    light = AssetBaseCfg(
-        prim_path="/World/light",   # light in the scene
-        spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), # light color (white)
-                                     intensity=3000.0),    # light intensity
-    )
+    # light = AssetBaseCfg(
+    #     prim_path="/World/light",   # light in the scene
+    #     spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), # light color (white)
+    #                                  intensity=3000.0),    # light intensity
+    # )
 
 
 

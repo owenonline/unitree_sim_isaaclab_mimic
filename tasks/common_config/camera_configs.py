@@ -109,8 +109,8 @@ class CameraPresets:
             focus_distance=400.0,
             horizontal_aperture=20.0,
             clipping_range=(0.1, 1.0e5),
-            pos_offset=(0.02541028, 0.0076, 0.135),
-            rot_offset=(-0.50262, 0.86451, 0, 0),
+            pos_offset=(0.02541028, 0.045, 0.135),
+            rot_offset=(-0.34202, 0.93969, 0, 0),
         )
     @classmethod
     def right_gripper_wrist_camera(cls) -> CameraCfg:
@@ -125,8 +125,8 @@ class CameraPresets:
             focus_distance=400.0,
             horizontal_aperture=20.0,
             clipping_range=(0.1, 1.0e5),
-            pos_offset=(-0.02541028, 0.0076, 0.135),
-            rot_offset=(-0.50262, 0.86451, 0, 0),
+            pos_offset=(-0.02541028, 0.045, 0.135),
+            rot_offset=(-0.34202, 0.93969, 0, 0),
         ) 
     @classmethod
     def left_dex3_wrist_camera(cls) -> CameraCfg:
