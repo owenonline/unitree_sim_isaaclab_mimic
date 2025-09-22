@@ -43,6 +43,10 @@ def create_dds_objects(args_cli,env):
     sim_state_dds = SimStateDDS(env,args_cli.task)
     dds_manager.register_object("sim_state", sim_state_dds)
     publish_names.append("sim_state")
+    from dds.rewards_dds import RewardsDDS
+    rewards_dds = RewardsDDS(env,args_cli.task)
+    dds_manager.register_object("rewards", rewards_dds)
+    publish_names.append("rewards")
 
     dds_manager.start_publishing(publish_names)
     dds_manager.start_subscribing(subscribe_names)

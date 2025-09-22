@@ -36,7 +36,7 @@ parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexte
 parser.add_argument("--enable_inspire_dds", action="store_true", help="enable inspire hand DDS")
 parser.add_argument("--stats_interval", type=float, default=10.0, help="statistics print interval (seconds)")
 
-parser.add_argument("--file_path", type=str, default="/home/unitree/newDisk/sim-data/text1/Placecylinder", help="file path (when action_source=file)")
+parser.add_argument("--file_path", type=str, default="/home/unitree/newDisk/xr_teleoperate/teleop/utils/data/pick_cube", help="file path (when action_source=file)")
 parser.add_argument("--generate_data_dir", type=str, default="./data", help="save data dir")
 parser.add_argument("--generate_data", action="store_true", default=False, help="generate data")
 parser.add_argument("--rerun_log", action="store_true", default=False, help="rerun log")
@@ -383,7 +383,7 @@ def main():
     print(f"\ncreate action provider: {args_cli.action_source}...")
     try:
         print(f"args_cli.task: {args_cli.task}")
-        if "Wholebody" in args_cli.task or args_cli.enable_wholebody_dds:
+        if not args_cli.replay_data and ("Wholebody" in args_cli.task or args_cli.enable_wholebody_dds):
             args_cli.action_source = "dds_wholebody"
             args_cli.enable_wholebody_dds = True
             control_config.use_rl_action_mode = True
@@ -461,7 +461,8 @@ def main():
                     # Compute current reward values manually if needed for debugging
                     try:
                         if (loop_count % reward_interval) == 0:
-                            current_reward = get_step_reward_value(env)
+                            pass
+                            # current_reward = get_step_reward_value(env)
                             # print(f"reward: {current_reward}")
                     except Exception as e:
                         print(f"奖励计算失败: {e}")
