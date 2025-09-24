@@ -4,7 +4,7 @@ import tempfile
 import torch
 from dataclasses import MISSING
 
-
+from pink.tasks import FrameTask
 
 import isaaclab.envs.mdp as base_mdp
 from isaaclab.envs import ManagerBasedRLEnvCfg
@@ -23,24 +23,22 @@ from tasks.common_config import  H12RobotPresets, CameraPresets  # isort: skip
 from tasks.common_event.event_manager import SimpleEvent, SimpleEventManager
 
 # import public scene configuration
-from tasks.common_scene.base_scene_pickplace_redblock import TableRedBlockSceneCfg
+from tasks.common_scene.base_scene_pickplace_cylindercfg import TableCylinderSceneCfg
 
 ##
 # Scene definition
 ##
 
 @configclass
-class ObjectTableSceneCfg(TableRedBlockSceneCfg):
+class ObjectTableSceneCfg(TableCylinderSceneCfg):
     """object table scene configuration class
-    
     inherits from G1SingleObjectSceneCfg, gets the complete G1 robot scene configuration
     can add task-specific scene elements or override default configurations here
     """
     
     # Humanoid robot w/ arms higher
     # 5. humanoid robot configuration 
-    robot: ArticulationCfg = H12RobotPresets.h12_26dof_inspire_base_fix(init_pos=(-4.2, -3.7, 0.76),
-        init_rot=(0.7071, 0, 0, -0.7071))
+    robot: ArticulationCfg = H12RobotPresets.h12_27dof_inspire_base_fix()
 
 
     # 6. add camera configuration 
@@ -61,8 +59,8 @@ class ActionsCfg:
 
 @configclass
 class ObservationsCfg:
-    """Observation specifications for the MDP."""
-    """defines all available observation information
+    """
+    defines all available observation information
     """
     @configclass
     class PolicyCfg(ObsGroup):
@@ -70,12 +68,10 @@ class ObservationsCfg:
         defines all state observation values for policy decision
         inherit from ObsGroup base class 
         """
-        # 1. robot joint state observation
+
         robot_joint_state = ObsTerm(func=mdp.get_robot_boy_joint_states)
-        # 2. gripper joint state observation 
         robot_inspire_state = ObsTerm(func=mdp.get_robot_inspire_joint_states)
 
-        # 3. camera image observation
         camera_image = ObsTerm(func=mdp.get_camera_image)
 
         def __post_init__(self):
@@ -119,8 +115,8 @@ class EventCfg:
 
 
 @configclass
-class PickPlaceH1226dofInspireHandBaseFixEnvCfg(ManagerBasedRLEnvCfg):
-    """Unitree G1 robot pick place environment configuration class
+class PickPlaceH1227dofInspireBaseFixEnvCfg(ManagerBasedRLEnvCfg):
+    """
     inherits from ManagerBasedRLEnvCfg, defines all configuration parameters for the entire environment
     """
 
@@ -133,7 +129,7 @@ class PickPlaceH1226dofInspireHandBaseFixEnvCfg(ManagerBasedRLEnvCfg):
     observations: ObservationsCfg = ObservationsCfg()   # observation configuration
     actions: ActionsCfg = ActionsCfg()                  # action configuration
     # MDP settings
-    # 3. MDP settings
+        
     terminations: TerminationsCfg = TerminationsCfg()    # termination configuration
     events = EventCfg()                                  # event configuration
     commands = None # command manager
@@ -141,31 +137,25 @@ class PickPlaceH1226dofInspireHandBaseFixEnvCfg(ManagerBasedRLEnvCfg):
     curriculum = None # curriculum manager
     def __post_init__(self):
         """Post initialization."""
+        # general settings
         self.decimation = 2
         self.episode_length_s = 20.0
+        # simulation settings
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation
         self.sim.physx.bounce_threshold_velocity = 0.01
         self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4
-        self.sim.physx.gpu_total_aggregate_pairs_capacity = 32 * 1024
-        self.sim.physx.friction_correlation_distance = 0.003
-        self.sim.physx.enable_ccd = True
-        self.sim.physx.gpu_constraint_solver_heavy_spring_enabled = True
-        self.sim.physx.num_substeps = 2
-        self.sim.physx.contact_offset = 0.015
-        self.sim.physx.rest_offset = 0.001
-        self.sim.physx.num_position_iterations = 12
-        self.sim.physx.num_velocity_iterations = 4
-
+        self.sim.physx.gpu_total_aggregate_pairs_capacity = 16 * 1024
+        self.sim.physx.friction_correlation_distance = 0.00625
         # create event manager
-        self.event_manager = SimpleEventManager() 
+        self.event_manager = SimpleEventManager()
 
         # register "reset object" event
         self.event_manager.register("reset_object_self", SimpleEvent(
             func=lambda env: base_mdp.reset_root_state_uniform(
                 env,
                 torch.arange(env.num_envs, device=env.device),
-                pose_range={"x": [-0.05, 0.05], "y": [-0.05, 0.05]},
+                pose_range={"x": [-0.05, 0.05], "y": [0.0, 0.05]},
                 velocity_range={},
                 asset_cfg=SceneEntityCfg("object"),
             )
