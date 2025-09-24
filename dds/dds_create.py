@@ -5,7 +5,7 @@ from dds.dds_master import dds_manager
 def create_dds_objects(args_cli,env):
     publish_names = []
     subscribe_names = []
-    if args_cli.robot_type=="g129":
+    if args_cli.robot_type=="g129" or args_cli.robot_type=="h1_2":
         from dds.g1_robot_dds import G1RobotDDS
         g1_robot = G1RobotDDS()
         dds_manager.register_object("g129", g1_robot)
@@ -55,7 +55,7 @@ def create_dds_objects(args_cli,env):
 def create_dds_objects_replay(args_cli,env):
     publish_names = []
     subscribe_names = []
-    if args_cli.robot_type=="g129":
+    if args_cli.robot_type=="g129" or args_cli.robot_type=="h1_2":
         from dds.g1_robot_dds import G1RobotDDS
         g1_robot = G1RobotDDS()
         dds_manager.register_object("g129", g1_robot)

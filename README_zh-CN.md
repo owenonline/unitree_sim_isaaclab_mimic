@@ -29,7 +29,7 @@
 ## 1、 📖 介绍
 该项目基于Isaac Lab 搭建**宇树(Unitree)机器人**在不同任务下的仿真场景，方便进行数据采集、数据回放、数据生成以及模型验证。可以与[xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate)代码配合进行数据集的采集。该项目采用了与真实机器人一样的DDS通信，以提高代码的通用性和使用的简易性。
 
-目前该项目使用带有夹爪的Unitree G1(G1-29dof-gripper)以及带有三指灵巧手的Unitree G1(G1-29dof-dex3)搭建了不同任务的仿真场景，具体任务场景名称与图示如下表,其中任务名称中带有 `Wholebody`的任务可以进行移动操作：
+目前该项目使用了带有不同执行器的Unitree G1/H1-2机器人，并且搭建了不同任务的仿真场景，具体任务场景名称与图示如下表,其中任务名称中带有 `Wholebody`的任务可以进行移动操作：
 
 
 <table align="center">
@@ -37,6 +37,7 @@
     <th>G1-29dof-gripper</th>
     <th>G1-29dof-dex3</th>
     <th>G1-29dof-inspire</th>
+    <th>H1-2-inspire</th>
   </tr>
   <tr>
     <td align="center">
@@ -54,7 +55,11 @@
       <br/>
       <code>Isaac-PickPlace-Cylinder-G129-Inspire-Joint</code>
     </td>
-
+    <td align="center">
+      <img src="./img/Isaac-PickPlace-Cylinder-H12-26dof-Inspire-Joint.png" width="300" alt="G1-gripper-redblock"/>
+      <br/>
+      <code>Isaac-PickPlace-Cylinder-H12-26dof-Inspire-Joint</code>
+    </td>
   </tr>
   <tr>
     <td align="center">
@@ -71,6 +76,11 @@
       <img src="./img/Isaac-PickPlace-RedBlock-G129-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
       <br/>
       <code>Isaac-PickPlace-RedBlock-G129-Inspire-Joint</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-PickPlace-RedBlock-H12-26dof-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-PickPlace-RedBlock-H12-26dof-Inspire-Joint</code>
     </td>
   </tr>
   <tr>
@@ -89,9 +99,13 @@
       <br/>
       <code>Isaac-Stack-RgyBlock-G129-Inspire-Joint</code>
     </td>
+    <td align="center">
+      <img src="./img/Isaac-Stack-RgyBlock-H12-26dof-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code> Isaac-Stack-RgyBlock-H12-26dof-Inspire-Joint</code>
+    </td>
   </tr>
-
-  <tr>
+    <tr>
     <td align="center">
       <img src="./img/Isaac-Move-Cylinder-G129-Dex1-Wholebody.png" width="300" alt="G1-gripper-redblock"/>
       <br/>

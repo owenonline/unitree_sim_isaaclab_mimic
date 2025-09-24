@@ -28,7 +28,7 @@ class DDSActionProvider(ActionProvider):
         print(f"enable_gripper: {self.enable_gripper}")
         print(f"enable_dex3: {self.enable_dex3}")
         try:
-            if self.enable_robot == "g129":
+            if self.enable_robot == "g129" or self.enable_robot == "h1_2":
                 self.robot_dds = dds_manager.get_object("g129")
             if self.enable_gripper:
                 self.gripper_dds = dds_manager.get_object("dex1")
@@ -59,6 +59,36 @@ class DDSActionProvider(ActionProvider):
                 "right_wrist_pitch_joint": 12,
                 "right_wrist_yaw_joint": 13
             }
+            self.all_joint_names = self.env.scene["robot"].data.joint_names
+            self.joint_to_index = {name: i for i, name in enumerate(self.all_joint_names)}
+            self.arm_action_pose = [self.joint_to_index[name] for name in self.arm_joint_mapping.keys()]
+            self.arm_action_pose_indices = [self.arm_joint_mapping[name] for name in self.arm_joint_mapping.keys()]
+            self._arm_target_indices = [self.joint_to_index[name] for name in self.arm_joint_mapping.keys()]
+            self._arm_source_indices = [idx + 15 for idx in self.arm_joint_mapping.values()]  # source data from positions[15:]
+        elif self.enable_robot == "h1_2":
+            self.arm_joint_mapping = {
+                "left_shoulder_pitch_joint": 0,
+                "left_shoulder_roll_joint": 1,
+                "left_shoulder_yaw_joint": 2,
+                "left_elbow_joint": 3,
+                "left_wrist_roll_joint": 4,
+                "left_wrist_pitch_joint": 5,
+                "left_wrist_yaw_joint": 6,
+                "right_shoulder_pitch_joint": 7,
+                "right_shoulder_roll_joint": 8,
+                "right_shoulder_yaw_joint": 9,
+                "right_elbow_joint": 10,
+                "right_wrist_roll_joint": 11,
+                "right_wrist_pitch_joint": 12,
+                "right_wrist_yaw_joint": 13
+            }
+            print(f"self.env.scene['robot'].data.joint_names: {self.env.scene['robot'].data.joint_names}")
+            self.all_joint_names = self.env.scene["robot"].data.joint_names
+            self.joint_to_index = {name: i for i, name in enumerate(self.all_joint_names)}
+            self.arm_action_pose = [self.joint_to_index[name] for name in self.arm_joint_mapping.keys()]
+            self.arm_action_pose_indices = [self.arm_joint_mapping[name] for name in self.arm_joint_mapping.keys()]
+            self._arm_target_indices = [self.joint_to_index[name] for name in self.arm_joint_mapping.keys()]
+            self._arm_source_indices = [idx + 13 for idx in self.arm_joint_mapping.values()]  # source data from positions[13:]
         if self.enable_gripper:
             self.gripper_joint_mapping = {
                 "left_hand_Joint1_1": 1,
@@ -113,14 +143,10 @@ class DDSActionProvider(ActionProvider):
                 "R_thumb_intermediate_joint":[4,1.5],
                 "R_thumb_distal_joint":[4,2.4],
             }
-        self.all_joint_names = self.env.scene["robot"].data.joint_names
-        self.joint_to_index = {name: i for i, name in enumerate(self.all_joint_names)}
-        self.arm_action_pose = [self.joint_to_index[name] for name in self.arm_joint_mapping.keys()]
-        self.arm_action_pose_indices = [self.arm_joint_mapping[name] for name in self.arm_joint_mapping.keys()]
+
         
         # precompute indices (for vectorization)
-        self._arm_target_indices = [self.joint_to_index[name] for name in self.arm_joint_mapping.keys()]
-        self._arm_source_indices = [idx + 15 for idx in self.arm_joint_mapping.values()]  # source data from positions[15:]
+
         if self.enable_gripper:
             self._gripper_target_indices = [self.joint_to_index[name] for name in self.gripper_joint_mapping.keys()]
             self._gripper_source_indices = [idx for idx in self.gripper_joint_mapping.values()]
@@ -178,7 +204,14 @@ class DDSActionProvider(ActionProvider):
                         self._positions_buf[:29].copy_(torch.tensor(positions[:29], dtype=torch.float32, device=self.env.device))
                         arm_vals = self._positions_buf.index_select(0, self._arm_source_idx_t)
                         full_action.index_copy_(0, self._arm_target_idx_t, arm_vals)
-            
+            elif self.enable_robot == "h1_2" and self.robot_dds:
+                cmd_data = self.robot_dds.get_robot_command()
+                if cmd_data and 'motor_cmd' in cmd_data:
+                    positions = cmd_data['motor_cmd']['positions']
+                    if len(positions) >= 29:
+                        self._positions_buf[:29].copy_(torch.tensor(positions[:29], dtype=torch.float32, device=self.env.device))
+                        arm_vals = self._positions_buf.index_select(0, self._arm_source_idx_t)
+                        full_action.index_copy_(0, self._arm_target_idx_t, arm_vals)
             # Get gripper command
             if self.gripper_dds:
                 gripper_cmd = self.gripper_dds.get_gripper_command()

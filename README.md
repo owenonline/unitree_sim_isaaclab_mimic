@@ -28,14 +28,14 @@
 
 This project is built on **Isaac Lab** to simulate **Unitree robots** in various tasks, facilitating data collection, playback, generation, and model validation. It can be used in conjunction with the [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate) repository for dataset collection. The project adopts the same DDS communication protocol as the real robot to enhance code generality and ease of use.
 
-
-Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unitree G1 with three-finger dexterous hand (G1-29dof-dex3) to build simulation scenarios for different tasks. The specific task scene names and illustrations are shown in the table below. Tasks with `Wholebody` in their names can perform movement operations:
+Currently, the project employs Unitree G1/H1-2 robots equipped with different actuators, and provides simulation scenarios for multiple tasks. The task names and corresponding illustrations are summarized in the table below. Tasks that include `Wholebody` in their names enable mobile operations.
 
 <table align="center">
   <tr>
     <th>G1-29dof-gripper</th>
     <th>G1-29dof-dex3</th>
     <th>G1-29dof-inspire</th>
+    <th>H1-2-inspire</th>
   </tr>
   <tr>
     <td align="center">
@@ -52,6 +52,11 @@ Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unit
       <img src="./img/Isaac-PickPlace-Cylinder-G129-Inspire-Joint.png" width="300" alt="G1-dex3-cylinder"/>
       <br/>
       <code>Isaac-PickPlace-Cylinder-G129-Inspire-Joint</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-PickPlace-Cylinder-H12-26dof-Inspire-Joint.png" width="300" alt="G1-gripper-redblock"/>
+      <br/>
+      <code>Isaac-PickPlace-Cylinder-H12-26dof-Inspire-Joint</code>
     </td>
   </tr>
   <tr>
@@ -70,6 +75,11 @@ Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unit
       <br/>
       <code>Isaac-PickPlace-RedBlock-G129-Inspire-Joint</code>
     </td>
+    <td align="center">
+      <img src="./img/Isaac-PickPlace-RedBlock-H12-26dof-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code>Isaac-PickPlace-RedBlock-H12-26dof-Inspire-Joint</code>
+    </td>
   </tr>
   <tr>
     <td align="center">
@@ -86,6 +96,11 @@ Currently, this project uses Unitree G1 with gripper (G1-29dof-gripper) and Unit
       <img src="./img/Isaac-Stack-RgyBlock-G129-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
       <br/>
       <code>Isaac-Stack-RgyBlock-G129-Inspire-Joint</code>
+    </td>
+    <td align="center">
+      <img src="./img/Isaac-Stack-RgyBlock-H12-26dof-Inspire-Joint.png" width="300" alt="G1-dex3-redblock"/>
+      <br/>
+      <code> Isaac-Stack-RgyBlock-H12-26dof-Inspire-Joint</code>
     </td>
   </tr>
     <tr>

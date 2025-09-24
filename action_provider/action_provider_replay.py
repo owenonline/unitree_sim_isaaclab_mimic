@@ -73,7 +73,7 @@ class FileActionProviderReplay(ActionProvider):
         return self.start_loop
     def _setup_joint_mapping(self):
         """Setup joint mapping"""
-        if self.enable_robot == "g129":
+        if self.enable_robot == "g129" or self.enable_robot == "h1_2":
             self.arm_joint_mapping = {
                 "left_shoulder_pitch_joint": 0,
                 "left_shoulder_roll_joint": 1,
@@ -181,7 +181,7 @@ class FileActionProviderReplay(ActionProvider):
         try:
             # Get robot command
             if self.action_index < self.total_step_num:
-                if self.enable_robot == "g129":
+                if self.enable_robot == "g129" or self.enable_robot == "h1_2":
                     arm_cmd_data = self.robot_action[self.action_index]
      
                 # Get gripper command

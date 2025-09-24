@@ -88,6 +88,10 @@ class CameraPresets:
         """front camera configuration"""
         return CameraBaseCfg.get_camera_config()
     @classmethod
+    def h12_front_camera(cls) -> CameraCfg:
+        """front camera configuration"""
+        return CameraBaseCfg.get_camera_config(prim_path = "/World/envs/env_.*/Robot/camera_link/front_cam")
+    @classmethod
     def g1_world_camera(cls) -> CameraCfg:
         """front camera configuration"""
         return CameraBaseCfg.get_camera_config(prim_path="/World/envs/env_.*/Robot/d435_link/PerspectiveCamera_robot",
@@ -95,7 +99,14 @@ class CameraPresets:
                                                     rot_offset=( -0.51292,0.51292,-0.48674, 0.48674),
                                                     focal_length = 12,
                                                     horizontal_aperture=27)
-    
+    @classmethod
+    def h12_world_camera(cls) -> CameraCfg:
+        """front camera configuration"""
+        return CameraBaseCfg.get_camera_config(prim_path="/World/envs/env_.*/Robot/camera_link/PerspectiveCamera_robot",
+                                                    pos_offset=(-0.9, 0.0, 0.0),
+                                                    rot_offset=( -0.51292,0.51292,-0.48674, 0.48674),
+                                                    focal_length = 12,
+                                                    horizontal_aperture=27)
     @classmethod
     def left_gripper_wrist_camera(cls) -> CameraCfg:
         """left wrist camera configuration"""

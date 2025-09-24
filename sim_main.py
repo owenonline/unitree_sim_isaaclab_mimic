@@ -36,7 +36,7 @@ parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexte
 parser.add_argument("--enable_inspire_dds", action="store_true", help="enable inspire hand DDS")
 parser.add_argument("--stats_interval", type=float, default=10.0, help="statistics print interval (seconds)")
 
-parser.add_argument("--file_path", type=str, default="/home/unitree/newDisk/xr_teleoperate/teleop/utils/data/pick_cube", help="file path (when action_source=file)")
+parser.add_argument("--file_path", type=str, default="/home/unitree/Code/xr_teleoperate/teleop/utils/data", help="file path (when action_source=file)")
 parser.add_argument("--generate_data_dir", type=str, default="./data", help="save data dir")
 parser.add_argument("--generate_data", action="store_true", default=False, help="generate data")
 parser.add_argument("--rerun_log", action="store_true", default=False, help="rerun log")
@@ -568,7 +568,7 @@ def main():
     # profiler.disable()
     # s = io.StringIO()
     # ps = pstats.Stats(profiler, stream=s).strip_dirs().sort_stats("time")
-    # ps.print_stats(30)  # 打印耗时前20的函数
+    # ps.print_stats(30)  
 
     # print(s.getvalue())
 
@@ -653,3 +653,8 @@ if __name__ == "__main__":
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Move-Cylinder-G129-Dex1-Wholebody  --robot_type g129 --enable_dex1_dds 
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Move-Cylinder-G129-Dex3-Wholebody  --robot_type g129 --enable_dex3_dds 
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-Move-Cylinder-G129-Inspire-Wholebody  --robot_type g129 --enable_inspire_dds 
+
+
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-Cylinder-H12-26dof-Inspire-Joint  --enable_inspire_dds --robot_type h1_2
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-RedBlock-H12-26dof-Inspire-Joint  --enable_inspire_dds --robot_type h1_2
+# python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-H12-26dof-Inspire-Joint --enable_inspire_dds --robot_type h1_2

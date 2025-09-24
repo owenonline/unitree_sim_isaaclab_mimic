@@ -78,7 +78,7 @@ class G1RobotDDS(DDSObject):
 
             motor_state = self.low_state.motor_state
             imu_state = self.low_state.imu_state
-            num_motors = min(29, len(motor_state)) 
+            num_motors =len(motor_state)
 
             positions = data.get("joint_positions")
             velocities = data.get("joint_velocities")
@@ -88,8 +88,7 @@ class G1RobotDDS(DDSObject):
                 q_array = np.asarray(positions, dtype=np.float32)
                 dq_array = np.asarray(velocities, dtype=np.float32)
                 tau_array = np.asarray(torques, dtype=np.float32)
-
-                for i in range(num_motors):
+                for i in range(len(q_array)):
                     motor = motor_state[i]
                     motor.q = q_array[i]
                     motor.dq = dq_array[i]
@@ -137,7 +136,7 @@ class G1RobotDDS(DDSObject):
                 return {}
             
             # extract the command data
-            num_cmd_motors = min(29, len(msg.motor_cmd)) 
+            num_cmd_motors = len(msg.motor_cmd)
             cmd_data = {
                 "mode_pr": int(msg.mode_pr),
                 "mode_machine": int(msg.mode_machine),
