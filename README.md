@@ -157,7 +157,8 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 
 - --task: Task name, corresponding to the task names in the table above
 - --enable_dex1_dds/--enable_dex3_dds: Represent enabling DDS for two-finger gripper/three-finger dexterous hand respectively  
-- --robot_type: Robot type, currently has 29-DOF unitree g1 (g129)
+- --robot_type: Robot type, currently has 29-DOF unitree g1 (g129),27-DoF H1-2
+- --headless: Run without launching the Sim window.
 
 **Note:** If you need to control robot movement, please refer to `send_commands_8bit.py` or `send_commands_keyboard.py` to publish control commands, or you can use them directly. Please note that only tasks marked with `Wholebody` are mobile tasks and can control the robot's movement.
 

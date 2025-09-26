@@ -156,7 +156,8 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 
 - --task: 任务名称，对应上表中的任务名称
 - --enable_dex1_dds/--enable_dex3_dds: 分别代表启用二指夹爪/三指灵巧手的dds
-- --robot_type: 机器人类型，目前有29自由度的unitree g1(g129)
+- --robot_type: 机器人类型，目前有29自由度的unitree g1(g129),27自由度的H1-2
+- --headless: 不启动Sim窗口下运行
 
 **注意:** 如需要控制机器人移动，请参考`send_commands_8bit.py` 或者 `send_commands_keyboard.py` 发布控制命令，也可以直接使用。但是请注意只有带有`Wholebody`标识的才是移动型任务，才能控制机器人移动。
 

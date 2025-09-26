@@ -55,11 +55,16 @@ parser.add_argument("--reward_interval", type=int, default=10, help="step interv
 parser.add_argument("--enable_wholebody_dds", action="store_true", default=False, help="enable wh dds")
 
 parser.add_argument("--physics_dt", type=float, default=None, help="physics time step, e.g., 0.005")
-parser.add_argument("--render_interval", type=int, default=None, help="GUI render interval steps")
+parser.add_argument("--render_interval", type=int, default=None, help="render interval steps (>=1)")
 parser.add_argument("--camera_write_interval", type=int, default=None, help="camera write interval steps (>=1)")
 
 
-parser.add_argument("--no_render", action="store_true", default=True, help="disable GUI rendering")
+parser.add_argument(
+    "--no_render",
+    action="store_true",
+    default=False,
+    help="disable rendering updates entirely (overrides render interval)",
+)
 parser.add_argument("--solver_iterations", type=int, default=None, help="physx solver iteration count (e.g., 4)")
 parser.add_argument("--gravity_z", type=float, default=None, help="override gravity z (e.g., -9.8)")
 parser.add_argument("--skip_cvtcolor", action="store_true", default=False, help="skip cv2.cvtColor if upstream already BGR")
@@ -201,19 +206,27 @@ def main():
                     print(f"[sim] physics dt assigned to env.sim.dt={args_cli.physics_dt}")
                 except Exception as e:
                     print(f"[sim] failed to set physics dt: {e}")
+        headless_mode = bool(getattr(args_cli, "headless", False))
+        render_interval = None
         if args_cli.render_interval is not None:
             try:
-                env.sim.render_interval = int(args_cli.render_interval)
-                print(f"[sim] render_interval set to {env.sim.render_interval}")
+                render_interval = max(1, int(args_cli.render_interval))
             except Exception as e:
-                print(f"[sim] failed to set render_interval: {e}")
-        if args_cli.no_render:
-            try:
+                print(f"[sim] invalid render_interval value {args_cli.render_interval}: {e}")
+        try:
+            if args_cli.no_render:
                 env.sim.render_interval = 1_000_000
                 env.sim.render_mode = "offscreen"
-                print("[sim] GUI rendering disabled via large render_interval")
-            except Exception as e:
-                print(f"[sim] failed to disable rendering: {e}")
+                print("[sim] rendering disabled via --no_render")
+            elif headless_mode:
+                env.sim.render_mode = "offscreen"
+                env.sim.render_interval = render_interval or 1
+                print(f"[sim] headless offscreen rendering every {env.sim.render_interval} steps")
+            elif render_interval is not None:
+                env.sim.render_interval = render_interval
+                print(f"[sim] render_interval set to {env.sim.render_interval}")
+        except Exception as e:
+            print(f"[sim] failed to configure rendering: {e}")
         if args_cli.camera_write_interval is not None:
             try:
                 import tasks.common_observations.camera_state as cam_state
@@ -310,9 +323,14 @@ def main():
     
     print("="*60)
     
-    print("\n")
-    print("***  Please left-click on the Sim window to activate rendering. ***")
-    print("\n")
+    if not getattr(args_cli, "headless", False) and not args_cli.no_render:
+        print("\n")
+        print("***  Please left-click on the Sim window to activate rendering. ***")
+        print("\n")
+    else:
+        print("\n")
+        print("***  Running without GUI; rendering handled offscreen. ***")
+        print("\n")
     # reset environment
     if args_cli.modify_light:
         update_light(
