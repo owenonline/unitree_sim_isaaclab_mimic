@@ -38,14 +38,20 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
     conda clean -afy
 
 # 切换到 Conda 环境
-SHELL ["conda", "run", "-n", "unitree_sim_env", "/bin/bash", "-c"]
+SHELL ["conda", "run", "-n", "unitree_sim_env", "/bin/bash", "-c"]  
+
+
+
+RUN conda install -y -c conda-forge "libgcc-ng>=12" "libstdcxx-ng>=12" && \
+    apt-get update && apt-get install -y libvulkan1 vulkan-tools && rm -rf /var/lib/apt/lists/*
+
 
 # 安装 PyTorch（CUDA 12.6 对应）
 RUN pip install --upgrade pip && \
     pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu126
 
 
-    # 安装 Isaac Sim
+# 安装 Isaac Sim
 RUN pip install "isaacsim[all,extscache]==5.0.0" --extra-index-url https://pypi.nvidia.com
 
 # 创建工作目录
@@ -86,24 +92,31 @@ ENV TZ=Asia/Shanghai
 ENV CONDA_DIR=/opt/conda
 ENV PATH=$CONDA_DIR/bin:$PATH
 
-
 # 禁止 Isaac Sim 自动启动
 ENV OMNI_KIT_ALLOW_ROOT=1
 ENV OMNI_KIT_DISABLE_STARTUP=1
 
 # 安装运行时依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libglu1-mesa git-lfs zenity \
+    libglu1-mesa git-lfs zenity unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制 Conda 环境和代码
+COPY --from=builder /home/code/IsaacLab /home/code/IsaacLab
+COPY --from=builder /home/code/unitree_sdk2_python /home/code/unitree_sdk2_python
+
+COPY --from=builder /cyclonedds /cyclonedds
 COPY --from=builder /opt/conda /opt/conda
 COPY --from=builder /home/code/unitree_sim_isaaclab /home/code/unitree_sim_isaaclab
+
+
+ENV CYCLONEDDS_HOME=/cyclonedds/install
 
 # 写入 bashrc 初始化
 RUN echo 'source /opt/conda/etc/profile.d/conda.sh' >> ~/.bashrc && \
     echo 'conda activate unitree_sim_env' >> ~/.bashrc && \
-    echo 'export OMNI_KIT_ALLOW_ROOT=1' >> ~/.bashrc
+    echo 'export OMNI_KIT_ALLOW_ROOT=1' >> ~/.bashrc && \
+    echo 'export OMNI_KIT_DISABLE_STARTUP=1' >> ~/.bashrc
 
 WORKDIR /home/code
 

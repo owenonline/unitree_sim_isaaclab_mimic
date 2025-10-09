@@ -134,9 +134,28 @@
 ### 2.2 Isaac Sim 5.0.0相关环境安装（RTX4080以及以上推荐安装）
 请参考<a href="doc/isaacsim5.0_install_zh.md"> isaacsim 5.0.0 环境安装步骤 </a> 进行环境安装
 
-### 2.3 运行程序
+### 2.3 构建docker环境（使用的是Ubuntu22.04/IsaacSim 5.0）
+#### 2.3.1 构建docker
+```bash
+sudo docker pull nvidia/cuda:12.2.0-runtime-ubuntu22.04
+cd   unitree_sim_isaaclab
+sudo docker build   --build-arg http_proxy=http://127.0.0.1:7890   --build-arg https_proxy=http://127.0.0.1:7890   -t unitree-sim:latest -f Dockerfile .
+#  如果需要使用代理请填写- -build-arg http_proxy=http://127.0.0.1:7890   --build-arg https_proxy=http://127.0.0.1:7890
 
-#### 2.3.1 资产下载
+```
+#### 2.3.2 进入docker
+
+```shell
+xhost +local:docker
+
+sudo docker run --gpus all -it --rm   --network host   -e NVIDIA_VISIBLE_DEVICES=all   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video,graphics,display   -e LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH   -e DISPLAY=$DISPLAY   -e VK_ICD_FILENAMES=/etc/vulkan/icd.d/nvidia_icd.json   -v /etc/vulkan/icd.d:/etc/vulkan/icd.d:ro   -v /usr/share/vulkan/icd.d:/usr/share/vulkan/icd.d:ro   -v /tmp/.X11-unix:/tmp/.X11-unix:rw   -v /home/unitree/newDisk/unitree_sim_isaaclab_usds:/home/code/isaacsim_assets   unitree-isaacsim-env /bin/bash
+
+#其中 -v /home/unitree/newDisk/unitree_sim_isaaclab_usds:/home/code/isaacsim_assets 是把宿主机中的unitree_sim_isaaclab_usds目录映射到docker容器的isaacsim_assets中，方便进行数据的共享，请根据自己情况修改。
+
+```
+### 2.4 运行程序
+
+#### 2.4.1 资产下载
 
 使用下面的命令下载需要的资产文件
 
@@ -148,7 +167,7 @@ sudo apt install git-lfs
 . fetch_assets.sh
 ```
 
-#### 2.3.2 遥操作
+#### 2.4.2 遥操作
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_dex1_dds --robot_type g129
@@ -157,11 +176,11 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 - --task: 任务名称，对应上表中的任务名称
 - --enable_dex1_dds/--enable_dex3_dds: 分别代表启用二指夹爪/三指灵巧手的dds
 - --robot_type: 机器人类型，目前有29自由度的unitree g1(g129),27自由度的H1-2
-- --headless: 不启动Sim窗口下运行
+- --headless: 不启动Sim窗口下运行,如果使用Docker环境进行运行请添加此参数
 
 **注意:** 如需要控制机器人移动，请参考`send_commands_8bit.py` 或者 `send_commands_keyboard.py` 发布控制命令，也可以直接使用。但是请注意只有带有`Wholebody`标识的才是移动型任务，才能控制机器人移动。
 
-#### 2.3.3 数据回放
+#### 2.4.3 数据回放
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_dex1_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/xr_teleoperate/teleop/utils/data" 
@@ -172,7 +191,7 @@ python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G
 **注意：** 这里使用的数据集存放格式是与[xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate)遥操作录制的数据集格式一致。
 
 **注意:** 针对任务离散的Reward可以使用 'get_step_reward_value' 函数获取
-#### 2.3.4 数据生成
+#### 2.4.4 数据生成
 通过在数据回放过程中调整光照条件和相机参数，并重新采集图像数据，可用于生成具有多样化视觉特征的增强数据，从而提升模型的泛化能力。
 
 ```

@@ -134,10 +134,34 @@ Please refer to the <a href="doc/isaacsim4.5_install.md">Isaac Sim 4.5.0 Environ
 
 Please refer to the <a href="doc/isaacsim5.0_install.md">Isaac Sim 5.0.0 Environment Installation Steps</a> for the setup.
 
+### 2.3 Build the Docker Environment (Using Ubuntu 22.04 / IsaacSim 5.0)
 
-### 2.3 Run Program
+#### 2.3.1 Build the Docker environment
+```shell
+sudo docker pull nvidia/cuda:12.2.0-runtime-ubuntu22.04
+cd unitree_sim_isaaclab
+sudo docker build \
+  --build-arg http_proxy=http://127.0.0.1:7890 \
+  --build-arg https_proxy=http://127.0.0.1:7890 \
+  -t unitree-sim:latest -f Dockerfile .
 
-#### 2.3.1 Asset Download
+# If you need to use a proxy, please fill in
+# --build-arg http_proxy=http://127.0.0.1:7890 --build-arg https_proxy=http://127.0.0.1:7890
+```
+
+#### 2.3.2 Enter the Docker environment
+
+```shell
+xhost +local:docker
+
+sudo docker run --gpus all -it --rm   --network host   -e NVIDIA_VISIBLE_DEVICES=all   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video,graphics,display   -e LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH   -e DISPLAY=$DISPLAY   -e VK_ICD_FILENAMES=/etc/vulkan/icd.d/nvidia_icd.json   -v /etc/vulkan/icd.d:/etc/vulkan/icd.d:ro   -v /usr/share/vulkan/icd.d:/usr/share/vulkan/icd.d:ro   -v /tmp/.X11-unix:/tmp/.X11-unix:rw   -v /home/unitree/newDisk/unitree_sim_isaaclab_usds:/home/code/isaacsim_assets   unitree-isaacsim-env /bin/bash
+
+# The option `-v /home/unitree/newDisk/unitree_sim_isaaclab_usds:/home/code/isaacsim_assets` maps the `unitree_sim_isaaclab_usds` directory on the host machine to `isaacsim_assets` inside the Docker container, making it convenient to share data between the host and the container. Please modify it according to your own setup.
+```
+
+### 2.4 Run Program
+
+#### 2.4.1 Asset Download
 
 Use the following command to download the required asset files
 
@@ -149,7 +173,7 @@ sudo apt install git-lfs
 . fetch_assets.sh
 ```
 
-#### 2.3.2 Teleoperation
+#### 2.4.2 Teleoperation
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint    --enable_dex1_dds --robot_type g129
@@ -158,11 +182,11 @@ python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylin
 - --task: Task name, corresponding to the task names in the table above
 - --enable_dex1_dds/--enable_dex3_dds: Represent enabling DDS for two-finger gripper/three-finger dexterous hand respectively  
 - --robot_type: Robot type, currently has 29-DOF unitree g1 (g129),27-DoF H1-2
-- --headless: Run without launching the Sim window.
+- --headless: This allows running without launching the simulation window. Add this parameter if you're using a Docker environment.
 
 **Note:** If you need to control robot movement, please refer to `send_commands_8bit.py` or `send_commands_keyboard.py` to publish control commands, or you can use them directly. Please note that only tasks marked with `Wholebody` are mobile tasks and can control the robot's movement.
 
-#### 2.3.3 Data Replay
+#### 2.4.3 Data Replay
 
 ```
 python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_dex1_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/xr_teleoperate/teleop/utils/data" 
@@ -177,7 +201,7 @@ python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G
 **Note:** For task-discrete rewards, you can use the `get_step_reward_value` function to retrieve them.
 
 
-#### 2.3.4 Data Generation
+#### 2.4.4 Data Generation
 During data replay, by modifying lighting conditions and camera parameters and re-capturing image data, more diverse visual features can be generated for data augmentation, thereby improving the model’s generalization ability.
 ```
 python sim_main.py --device cpu  --enable_cameras  --task Isaac-Stack-RgyBlock-G129-Dex1-Joint     --enable_dex1_dds --robot_type g129 --replay  --file_path "/home/unitree/Code/xr_teleoperate/teleop/utils/data" --generate_data --generate_data_dir "./data2"
