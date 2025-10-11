@@ -182,6 +182,10 @@ def main():
         print("total_action_dim:", env.action_manager.total_action_dim)
         for name, term in env.action_manager._terms.items():
             print(name, term.action_dim)
+        term = env.action_manager._terms["joint_pos"]
+        dof_indices = getattr(term, "dof_indices", None) or getattr(term, "_dof_indices", None)
+        if dof_indices is not None:
+            print(f"dof_indices: {dof_indices}")
 
         env.seed(args_cli.seed)
         try:

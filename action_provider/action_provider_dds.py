@@ -181,6 +181,9 @@ class DDSActionProvider(ActionProvider):
             self._inspire_special_scales_t = self._inspire_special_scales.to(device)
         
         self._full_action_buf = torch.zeros(len(self.all_joint_names), device=device, dtype=torch.float32)
+        print("DEBUG SECTION")
+        print(f"Joint names: {self.all_joint_names}")
+        print(f"joint to index: {self.joint_to_index}")
         self._positions_buf = torch.empty(29, device=device, dtype=torch.float32)
         if self.enable_gripper:
             self._gripper_buf = torch.empty(2, device=device, dtype=torch.float32)
