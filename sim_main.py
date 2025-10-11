@@ -178,6 +178,11 @@ def main():
     try:
         env_cfg.seed = args_cli.seed
         env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+
+        print("total_action_dim:", env.action_manager.total_action_dim)
+        for name, term in env.action_manager._terms.items():
+            print(name, term.action_dim)
+
         env.seed(args_cli.seed)
         try:
             sensors_dict = getattr(env.scene, "sensors", {})
