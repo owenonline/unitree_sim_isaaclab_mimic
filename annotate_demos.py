@@ -196,6 +196,8 @@ def main():
     if env_name is None:
         raise ValueError("Task/env name was not specified nor found in the dataset.")
 
+    print(env_name)
+
     env_cfg = parse_env_cfg(env_name, device=args_cli.device, num_envs=1)
 
     env_cfg.env_name = env_name
