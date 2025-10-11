@@ -47,78 +47,77 @@ class PickPlaceG129DEX3JointMimicEnvCfg(PickPlaceG129DEX3JointEnvCfg, MimicEnvCf
         self.datagen_config.num_fail_demo_to_render = 25
         self.datagen_config.seed = 1
 
-        # ---- Subtasks (placeholders for your future annotations) ----
-        # You described 4 subtasks:
-        # 1) left eef grabs and picks up cylinder
-        # 2) right eef grabs other end while left maintains grip
-        # 3) left eef lets go (right holds)
-        # 4) right hand drops cylinder into right bin
-        #
-        # We split them per arm so Mimic can mix/match demonstrations cleanly.
-        left_subtasks = []
-        right_subtasks = []
-
-        # (1) Left grabs & picks up
-        left_subtasks.append(
+        subtask_configs = []
+        subtask_configs.append(
             SubTaskConfig(
+                # Each subtask involves manipulation with respect to a single object frame.
                 object_ref="object",
-                subtask_term_signal="left_grab_pick",  # <-- you’ll annotate this in datagen later
+                # This key corresponds to the binary indicator in "datagen_info" that signals
+                # when this subtask is finished (e.g., on a 0 to 1 edge).
+                subtask_term_signal="idle_right",
                 first_subtask_start_offset_range=(0, 0),
+                # Randomization range for starting index of the first subtask
                 subtask_term_offset_range=(0, 0),
+                # Selection strategy for the source subtask segment during data generation
+                # selection_strategy="nearest_neighbor_object",
                 selection_strategy="nearest_neighbor_object",
+                # Optional parameters for the selection strategy function
                 selection_strategy_kwargs={"nn_k": 3},
+                # Amount of action noise to apply during this subtask
                 action_noise=0.003,
+                # Number of interpolation steps to bridge to this subtask segment
                 num_interpolation_steps=0,
+                # Additional fixed steps for the robot to reach the necessary pose
                 num_fixed_steps=0,
+                # If True, apply action noise during the interpolation phase and execution
                 apply_noise_during_interpolation=False,
             )
         )
-
-        # (2) Right grabs other end (left still holding)
-        right_subtasks.append(
+        subtask_configs.append(
             SubTaskConfig(
+                # Each subtask involves manipulation with respect to a single object frame.
                 object_ref="object",
-                subtask_term_signal="right_grab_hold",  # <-- annotate later
+                # Corresponding key for the binary indicator in "datagen_info" for completion
+                subtask_term_signal=None,
+                # Time offsets for data generation when splitting a trajectory
                 subtask_term_offset_range=(0, 0),
+                # Selection strategy for source subtask segment
                 selection_strategy="nearest_neighbor_object",
+                # Optional parameters for the selection strategy function
                 selection_strategy_kwargs={"nn_k": 3},
+                # Amount of action noise to apply during this subtask
                 action_noise=0.003,
-                num_interpolation_steps=3,   # small bridge to help right hand approach
+                # Number of interpolation steps to bridge to this subtask segment
+                num_interpolation_steps=3,
+                # Additional fixed steps for the robot to reach the necessary pose
                 num_fixed_steps=0,
+                # If True, apply action noise during the interpolation phase and execution
                 apply_noise_during_interpolation=False,
             )
         )
+        self.subtask_configs["right"] = subtask_configs
 
-        # (3) Left releases (right holds)
-        left_subtasks.append(
+        subtask_configs = []
+        subtask_configs.append(
             SubTaskConfig(
+                # Each subtask involves manipulation with respect to a single object frame.
                 object_ref="object",
-                subtask_term_signal="left_release",  # <-- annotate later
+                # Corresponding key for the binary indicator in "datagen_info" for completion
+                subtask_term_signal=None,
+                # Time offsets for data generation when splitting a trajectory
                 subtask_term_offset_range=(0, 0),
+                # Selection strategy for source subtask segment
                 selection_strategy="nearest_neighbor_object",
+                # Optional parameters for the selection strategy function
                 selection_strategy_kwargs={"nn_k": 3},
+                # Amount of action noise to apply during this subtask
                 action_noise=0.003,
+                # Number of interpolation steps to bridge to this subtask segment
                 num_interpolation_steps=0,
+                # Additional fixed steps for the robot to reach the necessary pose
                 num_fixed_steps=0,
+                # If True, apply action noise during the interpolation phase and execution
                 apply_noise_during_interpolation=False,
             )
         )
-
-        # (4) Right drops into right bin
-        right_subtasks.append(
-            SubTaskConfig(
-                object_ref="object",
-                subtask_term_signal="right_drop_bin",  # <-- annotate later
-                subtask_term_offset_range=(0, 0),
-                selection_strategy="nearest_neighbor_object",
-                selection_strategy_kwargs={"nn_k": 3},
-                action_noise=0.003,
-                num_interpolation_steps=3,  # small bridge into the bin
-                num_fixed_steps=0,
-                apply_noise_during_interpolation=False,
-            )
-        )
-
-        # Assign per end-effector
-        self.subtask_configs["left"] = left_subtasks
-        self.subtask_configs["right"] = right_subtasks
+        self.subtask_configs["left"] = subtask_configs
