@@ -196,8 +196,6 @@ def main():
     if env_name is None:
         raise ValueError("Task/env name was not specified nor found in the dataset.")
 
-    print(env_name)
-
     env_cfg = parse_env_cfg(env_name, device=args_cli.device, num_envs=1)
 
     env_cfg.env_name = env_name
@@ -228,6 +226,10 @@ def main():
 
     # create environment from loaded config
     env: ManagerBasedRLMimicEnv = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+
+    print("total_action_dim:", env.action_manager.total_action_dim)
+    for name, term in env.action_manager._terms.items():
+        print(name, term.action_dim)
 
     if not isinstance(env, ManagerBasedRLMimicEnv):
         raise ValueError("The environment should be derived from ManagerBasedRLMimicEnv")
