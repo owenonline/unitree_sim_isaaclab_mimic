@@ -175,7 +175,6 @@ def main():
     if not os.path.exists(args_cli.input_file):
         raise FileNotFoundError(f"The input dataset file {args_cli.input_file} does not exist.")
     dataset_file_handler = HDF5DatasetFileHandler()
-    dataset_file_handler.set_env_name("unitree_sim_isaaclab_mimic")
     dataset_file_handler.open(args_cli.input_file)
 
     env_name = dataset_file_handler.get_env_name()
