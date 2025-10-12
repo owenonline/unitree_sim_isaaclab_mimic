@@ -186,6 +186,8 @@ def main():
         dof_indices = getattr(term, "dof_indices", None) or getattr(term, "_dof_indices", None)
         if dof_indices is not None:
             print(f"dof_indices: {dof_indices}")
+        print(f"Observation terms: {env.observation_manager.active_terms}")
+        print(f"obs_buf keys: {env.obs_buf.keys()}")
 
         env.seed(args_cli.seed)
         try:

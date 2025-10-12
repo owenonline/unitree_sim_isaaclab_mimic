@@ -135,7 +135,7 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         return q
 
     # ---------------------------------------------------------
-    # Infer a target EEF pose from a *joint* action (not possible)
+    # Infer a target EEF pose from joint pose
     # ---------------------------------------------------------
     def action_to_target_eef_pose(self, action: torch.Tensor) -> dict[str, torch.Tensor]:
         """
@@ -144,10 +144,22 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         and controller. If you need this, compute FK externally (e.g., with your kinematics model)
         and call get_robot_eef_pose() while stepping through the trajectory.
         """
-        raise NotImplementedError(
-            "action_to_target_eef_pose is undefined for joint-space actions. "
-            "Use get_robot_eef_pose() to read the EEF pose from sim while executing actions."
-        )
+        robot = self.scene["robot"]
+        q_current = robot.get_joint_positions()[0]
+        q_target = q_current + action
+
+        left_index = robot.get_body_index("left_hand_palm_link")
+        right_index = robot.get_body_index("right_hand_palm_link")
+
+        dq = (q_target - q_current).unsqueeze(0)
+
+        jacs = robot.get_jacobians()
+        
+
+        # raise NotImplementedError(
+        #     "action_to_target_eef_pose is undefined for joint-space actions. "
+        #     "Use get_robot_eef_pose() to read the EEF pose from sim while executing actions."
+        # )
 
     # ---------------------------------------------------------
     # Extract gripper actuation (Dex3: 7 + 7) from a batch of actions
