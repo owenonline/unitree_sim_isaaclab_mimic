@@ -67,6 +67,14 @@ import isaaclab_mimic.envs  # noqa: F401
 if args_cli.enable_pinocchio:
     import isaaclab_mimic.envs.pinocchio_envs  # noqa: F401
 
+try:
+    from omni.isaac.core.utils.extensions import enable_extension
+    # One of these names depending on your Isaac Sim version; harmless to call both
+    enable_extension("omni.isaac.robot_motion")
+    enable_extension("omni.isaac.motion_generation")
+except Exception as e:
+    print("Warning: could not enable motion-generation extension automatically:", e)
+
 # Only enables inputs if this script is NOT headless mode
 if not args_cli.headless and not os.environ.get("HEADLESS", 0):
     from isaaclab.devices import Se3Keyboard, Se3KeyboardCfg
