@@ -10,7 +10,7 @@ import numpy as np
 import isaaclab.utils.math as PoseUtils
 from isaaclab.envs import ManagerBasedRLMimicEnv
 from isaacsim.robot_motion.motion_generation import ArticulationKinematicsSolver, LulaKinematicsSolver
-from isaacsim.core.prims import Articulation
+from isaacsim.core.prims import Articulation, SingleArticulation
 
 # This is a bit tougher than the example because they include eef pose in their observation, but our actions are just absolute joint angles
 # https://github.com/isaac-sim/IsaacLab/blob/3aafdf075d630907065d654450c51914e0ffe0a0/source/isaaclab_mimic/isaaclab_mimic/envs/pinocchio_envs/pickplace_gr1t2_mimic_env.py
@@ -28,6 +28,42 @@ RIGHT_HAND_DEX3_ORDER = [
     "right_hand_index_0_joint","right_hand_index_1_joint",
 ]
 JOINT_TO_IDX = {'left_hip_pitch_joint': 0, 'right_hip_pitch_joint': 1, 'waist_yaw_joint': 2, 'left_hip_roll_joint': 3, 'right_hip_roll_joint': 4, 'waist_roll_joint': 5, 'left_hip_yaw_joint': 6, 'right_hip_yaw_joint': 7, 'waist_pitch_joint': 8, 'left_knee_joint': 9, 'right_knee_joint': 10, 'left_shoulder_pitch_joint': 11, 'right_shoulder_pitch_joint': 12, 'left_ankle_pitch_joint': 13, 'right_ankle_pitch_joint': 14, 'left_shoulder_roll_joint': 15, 'right_shoulder_roll_joint': 16, 'left_ankle_roll_joint': 17, 'right_ankle_roll_joint': 18, 'left_shoulder_yaw_joint': 19, 'right_shoulder_yaw_joint': 20, 'left_elbow_joint': 21, 'right_elbow_joint': 22, 'left_wrist_roll_joint': 23, 'right_wrist_roll_joint': 24, 'left_wrist_pitch_joint': 25, 'right_wrist_pitch_joint': 26, 'left_wrist_yaw_joint': 27, 'right_wrist_yaw_joint': 28, 'left_hand_index_0_joint': 29, 'left_hand_middle_0_joint': 30, 'left_hand_thumb_0_joint': 31, 'right_hand_index_0_joint': 32, 'right_hand_middle_0_joint': 33, 'right_hand_thumb_0_joint': 34, 'left_hand_index_1_joint': 35, 'left_hand_middle_1_joint': 36, 'left_hand_thumb_1_joint': 37, 'right_hand_index_1_joint': 38, 'right_hand_middle_1_joint': 39, 'right_hand_thumb_1_joint': 40, 'left_hand_thumb_2_joint': 41, 'right_hand_thumb_2_joint': 42}
+
+def resolve_articulation(scene_robot):
+
+    if hasattr(scene_robot, "handles_initialized"):
+        return scene_robot
+
+    # 1) Try to get a concrete prim path straight from attributes commonly present
+    path = getattr(scene_robot, "prim_path", None)
+
+    # 2) If it's a *view*, it often has a regex in 'prim_paths_expr' and a method to list matches
+    if path is None:
+        expr = getattr(scene_robot, "prim_paths_expr", None)
+        get_paths = getattr(scene_robot, "get_prim_paths", None)
+        if expr and callable(get_paths):
+            matches = get_paths()
+            if not matches:
+                raise RuntimeError(f"No prims matched expression: {expr}")
+            path = matches[0]  # pick the single robot in your single-env setup
+
+    # 3) Last resort: some wrappers expose a USD prim handle
+    if path is None:
+        prim = getattr(scene_robot, "prim", None)
+        if prim is not None:
+            path = prim.GetPath().pathString
+
+    if not path or "*" in path or ".*" in path:
+        raise RuntimeError(f"Could not resolve a concrete prim path for robot. Got: {path}")
+
+    # Wrap with SingleArticulation (this class exposes 'handles_initialized')
+    sa = SingleArticulation(prim_path=path, name="robot_sa")
+    # Ensure initialized (no-op if already initialized by the world)
+    try:
+        sa.initialize()
+    except Exception:
+        pass
+    return sa
 
 class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
     """
@@ -51,9 +87,7 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
 
         print("DEBUGGING MIMIC")
         print(f"robot type: {type(self.scene['robot'])}")
-        # print(f"robot prim paths: {self.scene['robot'].__dict__}")
-        robot = Articulation(prim_paths_expr="'/World/envs/env_.*/Robot'", name="robot")
-        print(robot.__dict__)
+        print(f"robot prim paths: {self.scene['robot'].__dict__}")
 
         self.left_eef_solver = ArticulationKinematicsSolver(self.scene['robot'], self.lula_solver, "left_hand_palm_link")
         self.right_eef_solver = ArticulationKinematicsSolver(self.scene['robot'], self.lula_solver, "right_hand_palm_link")
