@@ -10,6 +10,7 @@ Script to add mimic annotations to demos to be used as source demos for mimic da
 import argparse
 import math
 
+from isaaclab.app import AppLauncher
 from isaacsim.simulation_app import SimulationApp
 
 # Launching Isaac Sim Simulator first.
@@ -42,7 +43,7 @@ parser.add_argument(
 )
 
 # append AppLauncher cli args
-# AppLauncher.add_app_launcher_args(parser)
+AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
 print(args_cli)
