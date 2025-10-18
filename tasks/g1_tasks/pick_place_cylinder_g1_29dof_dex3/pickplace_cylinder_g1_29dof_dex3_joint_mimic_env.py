@@ -51,7 +51,7 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
 
         print("DEBUGGING MIMIC")
         print(f"robot type: {type(self.scene['robot'])}")
-        print(f"robot prim paths: {self.scene['robot'].prim_paths}")
+        print(f"robot prim paths: {self.scene['robot'].__dict__}")
         # robot = Articulation(prim_paths_expr="")
 
         self.left_eef_solver = ArticulationKinematicsSolver(self.scene["robot"], self.lula_solver, "left_hand_palm_link")
