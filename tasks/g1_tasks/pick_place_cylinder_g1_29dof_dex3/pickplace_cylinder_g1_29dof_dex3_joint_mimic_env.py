@@ -10,7 +10,7 @@ import numpy as np
 import isaaclab.utils.math as PoseUtils
 from isaaclab.envs import ManagerBasedRLMimicEnv
 from isaacsim.robot_motion.motion_generation import ArticulationKinematicsSolver, LulaKinematicsSolver
-
+from isaacsim.core.prims import Articulation
 
 # This is a bit tougher than the example because they include eef pose in their observation, but our actions are just absolute joint angles
 # https://github.com/isaac-sim/IsaacLab/blob/3aafdf075d630907065d654450c51914e0ffe0a0/source/isaaclab_mimic/isaaclab_mimic/envs/pinocchio_envs/pickplace_gr1t2_mimic_env.py
@@ -48,6 +48,10 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
             robot_description_path="/home/code/unitree_sim_isaaclab/lula_config.yaml",
             urdf_path="/home/code/unitree_sim_isaaclab/g1_29dof_with_hand_rev_1_0.urdf"
         )
+
+        print("DEBUGGING MIMIC")
+        print(f"robot type: {type(self.scene['robot'])}")
+        # robot = Articulation(prim_paths_expr="")
 
         self.left_eef_solver = ArticulationKinematicsSolver(self.scene["robot"], self.lula_solver, "left_hand_palm_link")
         self.right_eef_solver = ArticulationKinematicsSolver(self.scene["robot"], self.lula_solver, "right_hand_palm_link")
