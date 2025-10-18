@@ -51,11 +51,12 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
 
         print("DEBUGGING MIMIC")
         print(f"robot type: {type(self.scene['robot'])}")
-        print(f"robot prim paths: {self.scene['robot'].__dict__}")
-        # robot = Articulation(prim_paths_expr="")
+        # print(f"robot prim paths: {self.scene['robot'].__dict__}")
+        robot = Articulation(prim_paths_expr="'/World/envs/env_.*/Robot'", name="robot")
+        print(robot.__dict__)
 
-        self.left_eef_solver = ArticulationKinematicsSolver(self.scene["robot"], self.lula_solver, "left_hand_palm_link")
-        self.right_eef_solver = ArticulationKinematicsSolver(self.scene["robot"], self.lula_solver, "right_hand_palm_link")
+        self.left_eef_solver = ArticulationKinematicsSolver(self.scene['robot'], self.lula_solver, "left_hand_palm_link")
+        self.right_eef_solver = ArticulationKinematicsSolver(self.scene['robot'], self.lula_solver, "right_hand_palm_link")
 
         right_solver_joint_names = getattr(self.right_eef_solver._joints_view, "joint_names", None)
         left_solver_joint_names = getattr(self.left_eef_solver._joints_view, "joint_names", None)
