@@ -85,14 +85,15 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
             urdf_path="/home/code/unitree_sim_isaaclab/g1_29dof_with_hand_rev_1_0.urdf"
         )
 
-        print("DEBUGGING MIMIC")
-        print(f"robot type: {type(self.scene['robot'])}")
-        found_prims = [x for x in self.scene['robot'].stage.Traverse()]
-        print(f"found_prims: {found_prims}")
-        # print(f"robot prim paths: {self.scene['robot'].__dict__}")
+        # print("DEBUGGING MIMIC")
+        # print(f"robot type: {type(self.scene['robot'])}")
+        # found_prims = [x for x in self.scene['robot'].stage.Traverse()]
+        # print(f"found_prims: {found_prims}")
 
-        self.left_eef_solver = ArticulationKinematicsSolver(self.scene['robot'], self.lula_solver, "left_hand_palm_link")
-        self.right_eef_solver = ArticulationKinematicsSolver(self.scene['robot'], self.lula_solver, "right_hand_palm_link")
+        self.robot = SingleArticulation("/World/envs/env_0/Robot")
+
+        self.left_eef_solver = ArticulationKinematicsSolver(self.robot, self.lula_solver, "left_hand_palm_link")
+        self.right_eef_solver = ArticulationKinematicsSolver(self.robot, self.lula_solver, "right_hand_palm_link")
 
         right_solver_joint_names = getattr(self.right_eef_solver._joints_view, "joint_names", None)
         left_solver_joint_names = getattr(self.left_eef_solver._joints_view, "joint_names", None)
@@ -147,10 +148,8 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
             An action torch.Tensor that's compatible with env.step().
         """
 
-        robot = self.scene["robot"]
-
         # set the root pose of the lula solver, to ensure correct inverse kinematics
-        robot_base_translation, robot_base_orientation = robot.get_world_pose()
+        robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
         self.lula_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
 
         # split the target pose into translation and orientation, and add action noise if specified by mimic
@@ -207,6 +206,10 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         Returns:
             A dictionary of eef pose torch.Tensor that @action corresponds to.
         """
+
+        # set the root pose of the lula solver, to ensure correct inverse kinematics
+        robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
+        self.lula_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
 
         combined_arm_action = action[0][self.solver_to_action_mapping] # index into the env dimension
 
