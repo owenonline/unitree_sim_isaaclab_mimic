@@ -68,20 +68,6 @@ import isaaclab_mimic.envs  # noqa: F401
 if args_cli.enable_pinocchio:
     import isaaclab_mimic.envs.pinocchio_envs  # noqa: F401
 
-import omni.kit.app
-ext_mgr = omni.kit.app.get_app().get_extension_manager()
-
-# These are the extension IDs that provide `isaacsim.robot_motion.motion_generation`
-for ext in ("omni.isaac.motion_generation", "omni.isaac.robot_motion"):
-    try:
-        if not ext_mgr.is_extension_enabled(ext):
-            ext_mgr.set_extension_enabled(ext, True)   # request enable
-    except Exception as e:
-        print(f"[warn] Could not enable {ext}: {e}")
-
-# Let Kit process the enable requests so the Python packages get registered
-simulation_app.update()
-
 # Only enables inputs if this script is NOT headless mode
 if not args_cli.headless and not os.environ.get("HEADLESS", 0):
     from isaaclab.devices import Se3Keyboard, Se3KeyboardCfg
