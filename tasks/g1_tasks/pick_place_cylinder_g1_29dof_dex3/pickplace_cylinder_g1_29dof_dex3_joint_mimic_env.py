@@ -54,8 +54,11 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         # found_prims = [x for x in self.scene['robot'].stage.Traverse()]
         # print(f"found_prims: {found_prims}")
 
-        self.robot = SingleArticulation("/World/envs/env_0/Robot")
+        self.robot = self.scene["robot"]
         self.robot.initialize()
+        # self.robot = SingleArticulation("/World/envs/env_0/Robot")
+        # self.robot.initialize()
+        assert self.robot.is_valid()
 
         self.left_eef_solver = ArticulationKinematicsSolver(self.robot, self.lula_solver, "left_hand_palm_link")
         self.right_eef_solver = ArticulationKinematicsSolver(self.robot, self.lula_solver, "right_hand_palm_link")
