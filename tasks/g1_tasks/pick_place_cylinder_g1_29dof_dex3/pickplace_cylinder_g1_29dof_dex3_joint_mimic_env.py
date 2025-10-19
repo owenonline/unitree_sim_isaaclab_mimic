@@ -200,6 +200,11 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         left_pos, left_quat = self.lula_solver.compute_forward_kinematics("left_hand_palm_link", combined_arm_action)
         right_pos, right_quat = self.lula_solver.compute_forward_kinematics("right_hand_palm_link", combined_arm_action)
 
+        left_pos = torch.from_numpy(left_pos)
+        right_pos = torch.from_numpy(right_pos)
+        left_quat = torch.from_numpy(left_quat)
+        right_quat = torch.from_numpy(right_quat)
+
         left_rot_mat = PoseUtils.matrix_from_quat(left_quat)
         right_rot_mat = PoseUtils.matrix_from_quat(right_quat)
 
