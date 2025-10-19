@@ -11,7 +11,6 @@ import isaaclab.utils.math as PoseUtils
 from isaaclab.envs import ManagerBasedRLMimicEnv
 from isaacsim.robot_motion.motion_generation import ArticulationKinematicsSolver, LulaKinematicsSolver
 from isaacsim.core.prims import SingleArticulation
-from omni.isaac.core.utils.prims import get_prim_at_path
 
 # This is a bit tougher than the example because they include eef pose in their observation, but our actions are just absolute joint angles
 # https://github.com/isaac-sim/IsaacLab/blob/3aafdf075d630907065d654450c51914e0ffe0a0/source/isaaclab_mimic/isaaclab_mimic/envs/pinocchio_envs/pickplace_gr1t2_mimic_env.py
