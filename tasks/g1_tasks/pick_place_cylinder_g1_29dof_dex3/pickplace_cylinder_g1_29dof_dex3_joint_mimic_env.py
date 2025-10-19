@@ -10,7 +10,8 @@ import numpy as np
 import isaaclab.utils.math as PoseUtils
 from isaaclab.envs import ManagerBasedRLMimicEnv
 from isaacsim.robot_motion.motion_generation import ArticulationKinematicsSolver, LulaKinematicsSolver
-from isaacsim.core.prims import Articulation#, SingleArticulation
+from isaacsim.core.prims import SingleArticulation
+from omni.isaac.core.utils.prims import get_prim_at_path
 
 # This is a bit tougher than the example because they include eef pose in their observation, but our actions are just absolute joint angles
 # https://github.com/isaac-sim/IsaacLab/blob/3aafdf075d630907065d654450c51914e0ffe0a0/source/isaaclab_mimic/isaaclab_mimic/envs/pinocchio_envs/pickplace_gr1t2_mimic_env.py
@@ -51,12 +52,13 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
 
         # print("DEBUGGING MIMIC")
         # print(f"robot type: {type(self.scene['robot'])}")
-        # found_prims = [x for x in self.scene['robot'].stage.Traverse()]
-        # print(f"found_prims: {found_prims}")
+        found_prims = str([x for x in self.scene['robot'].stage.Traverse()])
+        with open("/workspace/found_prims.txt", "w") as f:
+            f.write(found_prims)
 
         # self.robot = self.scene["robot"]
         # self.robot.initialize()
-        self.robot = Articulation("/World/envs/env_0/Robot", name="roboto")
+        self.robot = SingleArticulation("/World/envs/env_0/Robot", name="roboto")
         self.robot.initialize()
         assert self.robot.is_valid()
 
