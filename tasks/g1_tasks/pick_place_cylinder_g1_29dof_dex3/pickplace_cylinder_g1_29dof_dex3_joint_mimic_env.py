@@ -189,6 +189,7 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
 
         # set the root pose of the lula solver, to ensure correct inverse kinematics
         robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
+        print(type(robot_base_translation), type(robot_base_orientation))
         self.lula_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
 
         combined_arm_action = action[0][self.solver_to_action_mapping] # index into the env dimension
