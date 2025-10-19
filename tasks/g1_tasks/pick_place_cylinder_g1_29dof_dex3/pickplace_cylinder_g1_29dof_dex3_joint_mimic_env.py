@@ -55,6 +55,7 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         with open("/workspace/found_prims.txt", "w") as f:
             f.write(found_prims)
         
+        self.robot = None
 
     def lazy_load_solvers(self):
 
