@@ -54,9 +54,13 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         found_prims = str([x for x in self.scene['robot'].stage.Traverse()])
         with open("/workspace/found_prims.txt", "w") as f:
             f.write(found_prims)
+        
 
-        # self.robot = self.scene["robot"]
-        # self.robot.initialize()
+    def lazy_load_solvers(self):
+
+        if self.robot is not None:
+            return
+
         self.robot = SingleArticulation("/World/envs/env_0/Robot", name="roboto")
         self.robot.initialize()
         assert self.robot.is_valid()
@@ -84,6 +88,8 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         Returns:
             A torch.Tensor eef pose matrix. Shape is (len(env_ids), 4, 4)
         """
+
+        self.lazy_load_solvers()
 
         if eef_name == "left":
             eef_pos, rot_mat = self.left_eef_solver.compute_end_effector_pose()
@@ -116,6 +122,8 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         Returns:
             An action torch.Tensor that's compatible with env.step().
         """
+
+        self.lazy_load_solvers()
 
         # set the root pose of the lula solver, to ensure correct inverse kinematics
         robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
@@ -176,6 +184,8 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
             A dictionary of eef pose torch.Tensor that @action corresponds to.
         """
 
+        self.lazy_load_solvers()
+
         # set the root pose of the lula solver, to ensure correct inverse kinematics
         robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
         self.lula_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
@@ -203,6 +213,8 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
         Returns:
             A dictionary of torch.Tensor gripper actions. Key to each dict is an eef_name.
         """
+
+        self.lazy_load_solvers()
 
         return {
             "left": actions[:,:,self.left_hand_indices],
