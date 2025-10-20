@@ -197,16 +197,8 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
 
         combined_arm_action = action[0][self.solver_to_action_mapping] # index into the env dimension
 
-        print(f"combined_arm_action: {combined_arm_action}")
-        print(f"original action: {action[0]}")
-
         left_pos, left_quat = self.lula_solver.compute_forward_kinematics("left_hand_palm_link", combined_arm_action)
         right_pos, right_quat = self.lula_solver.compute_forward_kinematics("right_hand_palm_link", combined_arm_action)
-
-        print(f"left_pos: {left_pos}")
-        print(f"right_pos: {right_pos}")
-        print(f"left_quat: {left_quat}")
-        print(f"right_quat: {right_quat}")
 
         left_pos = torch.from_numpy(left_pos)
         right_pos = torch.from_numpy(right_pos)
