@@ -210,11 +210,8 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
 
         left_pos = torch.from_numpy(left_pos)
         right_pos = torch.from_numpy(right_pos)
-        left_quat = torch.from_numpy(left_quat)
-        right_quat = torch.from_numpy(right_quat)
-
-        left_rot_mat = PoseUtils.matrix_from_quat(left_quat)
-        right_rot_mat = PoseUtils.matrix_from_quat(right_quat)
+        left_rot_mat = torch.from_numpy(left_quat)
+        right_rot_mat = torch.from_numpy(right_quat)
 
         left_target_eef_pose = PoseUtils.make_pose(left_pos, left_rot_mat)
         right_target_eef_pose = PoseUtils.make_pose(right_pos, right_rot_mat)
