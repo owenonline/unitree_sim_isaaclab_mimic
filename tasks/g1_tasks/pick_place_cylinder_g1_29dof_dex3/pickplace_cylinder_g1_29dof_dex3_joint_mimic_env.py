@@ -197,13 +197,13 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
 
         combined_arm_action = action[0][self.solver_to_action_mapping] # index into the env dimension
 
-        left_pos, left_quat = self.lula_solver.compute_forward_kinematics("left_hand_palm_link", combined_arm_action)
-        right_pos, right_quat = self.lula_solver.compute_forward_kinematics("right_hand_palm_link", combined_arm_action)
+        left_pos, left_rot_mat = self.lula_solver.compute_forward_kinematics("left_hand_palm_link", combined_arm_action)
+        right_pos, right_rot_mat = self.lula_solver.compute_forward_kinematics("right_hand_palm_link", combined_arm_action)
 
         left_pos = torch.from_numpy(left_pos)
         right_pos = torch.from_numpy(right_pos)
-        left_rot_mat = torch.from_numpy(left_quat)
-        right_rot_mat = torch.from_numpy(right_quat)
+        left_rot_mat = torch.from_numpy(left_rot_mat)
+        right_rot_mat = torch.from_numpy(right_rot_mat)
 
         left_target_eef_pose = PoseUtils.make_pose(left_pos, left_rot_mat)
         right_target_eef_pose = PoseUtils.make_pose(right_pos, right_rot_mat)
