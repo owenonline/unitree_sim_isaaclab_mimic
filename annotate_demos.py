@@ -368,7 +368,7 @@ def replay_episode(
     actions = episode.data["actions"]
     env.sim.reset()
     env.recorder_manager.reset()
-    env.reset_to(initial_state, None, is_relative=True)
+    env.reset_to(initial_state, None, is_relative=False)
     first_action = True
     for action_index, action in enumerate(actions):
         current_action_index = action_index
