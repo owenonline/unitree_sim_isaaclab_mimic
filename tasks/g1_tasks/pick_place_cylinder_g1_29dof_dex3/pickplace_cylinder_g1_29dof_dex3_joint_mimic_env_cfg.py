@@ -3,11 +3,50 @@
 
 from isaaclab.envs.mimic_env_cfg import MimicEnvCfg, SubTaskConfig
 from isaaclab.utils import configclass
+from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.assets import RigidObject
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.envs import ManagerBasedRLEnv
+
+import torch
 
 # Import your IsaacLab task config
 from tasks.g1_tasks.pick_place_cylinder_g1_29dof_dex3.pickplace_cylinder_g1_29dof_dex3_joint_env_cfg import (
     PickPlaceG129DEX3JointEnvCfg,
 )
+
+def reset_object_estimate(
+    env: ManagerBasedRLEnv,
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+    min_x: float = -0.42,                # minimum x position threshold
+    max_x: float = 1.0,                # maximum x position threshold
+    min_y: float = 0.2,                # minimum y position threshold
+    max_y: float = 0.7,                # maximum y position threshold
+    min_height: float = 0.5,
+) -> torch.Tensor:
+   # when the object is not in the set return, reset
+    # Get object entity from the scene
+    # 1. get object entity from the scene
+    object: RigidObject = env.scene[object_cfg.name]
+    pos = object.data.root_pos_w
+
+    x = pos[:, 0]
+    y = pos[:, 1]
+    z = pos[:, 2]
+
+    in_x = (x > min_x) & (x < max_x)
+    in_y = (y > min_y) & (y < max_y)
+    in_h = z > min_height
+    
+    success = in_x & in_y & in_h 
+
+    return success.to(dtype=torch.bool, device=env.device)
+
+
+@configclass
+class MimicTerminationsCfg:
+    # check if the object is out of the working range
+    success = DoneTerm(func=reset_object_estimate)# use task completion check function
 
 
 @configclass
@@ -17,6 +56,8 @@ class PickPlaceG129DEX3JointMimicEnvCfg(PickPlaceG129DEX3JointEnvCfg, MimicEnvCf
 
     Inherits your task config, then augments it with Mimic data-gen settings and subtask layout.
     """
+
+    terminations: MimicTerminationsCfg = MimicTerminationsCfg()
 
     def __post_init__(self):
         # Call parents first
@@ -121,3 +162,5 @@ class PickPlaceG129DEX3JointMimicEnvCfg(PickPlaceG129DEX3JointEnvCfg, MimicEnvCf
             )
         )
         self.subtask_configs["left"] = subtask_configs
+
+    
