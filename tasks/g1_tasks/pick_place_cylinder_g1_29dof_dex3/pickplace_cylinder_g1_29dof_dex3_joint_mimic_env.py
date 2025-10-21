@@ -90,17 +90,23 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
             A torch.Tensor eef pose matrix. Shape is (len(env_ids), 4, 4)
         """
 
-        self.lazy_load_solvers()
+        try:
 
-        if eef_name == "left":
-            eef_pos, rot_mat = self.left_eef_solver.compute_end_effector_pose()
-        else:
-            eef_pos, rot_mat = self.right_eef_solver.compute_end_effector_pose()
+            self.lazy_load_solvers()
 
-        eef_pos_torch = torch.from_numpy(eef_pos)
-        rot_mat_torch = torch.from_numpy(rot_mat)
+            if eef_name == "left":
+                eef_pos, rot_mat = self.left_eef_solver.compute_end_effector_pose()
+            else:
+                eef_pos, rot_mat = self.right_eef_solver.compute_end_effector_pose()
 
-        return torch.unsqueeze(PoseUtils.make_pose(eef_pos_torch, rot_mat_torch), 0) # unsqueeze to get the env dimension
+            eef_pos_torch = torch.from_numpy(eef_pos)
+            rot_mat_torch = torch.from_numpy(rot_mat)
+
+            return torch.unsqueeze(PoseUtils.make_pose(eef_pos_torch, rot_mat_torch), 0) # unsqueeze to get the env dimension
+
+        except Exception as e:
+            self.robot = None
+            return self.get_robot_eef_pose(eef_name, env_ids)
 
     def target_eef_pose_to_action(
         self,
@@ -124,55 +130,61 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
             An action torch.Tensor that's compatible with env.step().
         """
 
-        self.lazy_load_solvers()
+        try:
 
-        # set the root pose of the lula solver, to ensure correct inverse kinematics
-        robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
-        robot_base_translation = robot_base_translation.cpu().detach().numpy()
-        robot_base_orientation = robot_base_orientation.cpu().detach().numpy()
-        self.lula_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
+            self.lazy_load_solvers()
 
-        # split the target pose into translation and orientation, and add action noise if specified by mimic
-        target_left_eef_pos, left_target_rot = PoseUtils.unmake_pose(target_eef_pose_dict["left"])
-        target_right_eef_pos, right_target_rot = PoseUtils.unmake_pose(target_eef_pose_dict["right"])
-        target_left_eef_rot_quat = PoseUtils.quat_from_matrix(left_target_rot)
-        target_right_eef_rot_quat = PoseUtils.quat_from_matrix(right_target_rot)
+            # set the root pose of the lula solver, to ensure correct inverse kinematics
+            robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
+            robot_base_translation = robot_base_translation.cpu().detach().numpy()
+            robot_base_orientation = robot_base_orientation.cpu().detach().numpy()
+            self.lula_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
 
-        if action_noise_dict is not None:
-            pos_noise_left = action_noise_dict["left"] * torch.randn_like(target_left_eef_pos)
-            pos_noise_right = action_noise_dict["right"] * torch.randn_like(target_right_eef_pos)
-            quat_noise_left = action_noise_dict["left"] * torch.randn_like(target_left_eef_rot_quat)
-            quat_noise_right = action_noise_dict["right"] * torch.randn_like(target_right_eef_rot_quat)
+            # split the target pose into translation and orientation, and add action noise if specified by mimic
+            target_left_eef_pos, left_target_rot = PoseUtils.unmake_pose(target_eef_pose_dict["left"])
+            target_right_eef_pos, right_target_rot = PoseUtils.unmake_pose(target_eef_pose_dict["right"])
+            target_left_eef_rot_quat = PoseUtils.quat_from_matrix(left_target_rot)
+            target_right_eef_rot_quat = PoseUtils.quat_from_matrix(right_target_rot)
 
-            target_left_eef_pos += pos_noise_left
-            target_right_eef_pos += pos_noise_right
-            target_left_eef_rot_quat += quat_noise_left
-            target_right_eef_rot_quat += quat_noise_right
+            if action_noise_dict is not None:
+                pos_noise_left = action_noise_dict["left"] * torch.randn_like(target_left_eef_pos)
+                pos_noise_right = action_noise_dict["right"] * torch.randn_like(target_right_eef_pos)
+                quat_noise_left = action_noise_dict["left"] * torch.randn_like(target_left_eef_rot_quat)
+                quat_noise_right = action_noise_dict["right"] * torch.randn_like(target_right_eef_rot_quat)
 
-        # use inverse kinematics to compute the joint angles required to achieve the target pose for each end effector
-        left_action, left_success = self.left_eef_solver.compute_inverse_kinematics(target_left_eef_pos, target_left_eef_rot_quat)
-        right_action, right_success = self.right_eef_solver.compute_inverse_kinematics(target_right_eef_pos, target_right_eef_rot_quat)
+                target_left_eef_pos += pos_noise_left
+                target_right_eef_pos += pos_noise_right
+                target_left_eef_rot_quat += quat_noise_left
+                target_right_eef_rot_quat += quat_noise_right
 
-        if not left_success or not right_success:
-            raise ValueError("Failed to compute inverse kinematics for one or both end effectors")
+            # use inverse kinematics to compute the joint angles required to achieve the target pose for each end effector
+            left_action, left_success = self.left_eef_solver.compute_inverse_kinematics(target_left_eef_pos, target_left_eef_rot_quat)
+            right_action, right_success = self.right_eef_solver.compute_inverse_kinematics(target_right_eef_pos, target_right_eef_rot_quat)
 
-        # the left solver returns zeros for all right arm joints and vice versa, 
-        # so we add the two vectors to get the joint angles for all arm joints
-        left_action_array = left_action.joint_positions
-        right_action_array = right_action.joint_positions
-        combined_arm_action = left_action_array + right_action_array
+            if not left_success or not right_success:
+                raise ValueError("Failed to compute inverse kinematics for one or both end effectors")
 
-        # now we use the mapping between indices in the list of joint actions returned by the solver
-        # and the full action vector required by the environment
-        full = np.zeros(len(JOINT_TO_IDX), dtype=np.float32)
-        full[self.solver_to_action_mapping] = combined_arm_action
+            # the left solver returns zeros for all right arm joints and vice versa, 
+            # so we add the two vectors to get the joint angles for all arm joints
+            left_action_array = left_action.joint_positions
+            right_action_array = right_action.joint_positions
+            combined_arm_action = left_action_array + right_action_array
 
-        # the next step is to add the gripper actions
-        # FOR THIS TO WORK THE GRIPPER ACTIONS MUST BE JOINT ACTUATIONS. I'M STILL NOT SURE IF THIS IS THE CASE.
-        full[self.left_hand_indices] = gripper_action_dict["left"]
-        full[self.right_hand_indices] = gripper_action_dict["right"]
+            # now we use the mapping between indices in the list of joint actions returned by the solver
+            # and the full action vector required by the environment
+            full = np.zeros(len(JOINT_TO_IDX), dtype=np.float32)
+            full[self.solver_to_action_mapping] = combined_arm_action
 
-        return torch.from_numpy(np.expand_dims(full, axis=0)) # unsqueeze to get the env dimension
+            # the next step is to add the gripper actions
+            # FOR THIS TO WORK THE GRIPPER ACTIONS MUST BE JOINT ACTUATIONS. I'M STILL NOT SURE IF THIS IS THE CASE.
+            full[self.left_hand_indices] = gripper_action_dict["left"]
+            full[self.right_hand_indices] = gripper_action_dict["right"]
+
+            return torch.from_numpy(np.expand_dims(full, axis=0)) # unsqueeze to get the env dimension
+
+        except Exception as e:
+            self.robot = None
+            return self.target_eef_pose_to_action(target_eef_pose_dict, gripper_action_dict, action_noise_dict, env_id)
 
     def action_to_target_eef_pose(self, action: torch.Tensor) -> dict[str, torch.Tensor]:
         """
@@ -187,28 +199,34 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
             A dictionary of eef pose torch.Tensor that @action corresponds to.
         """
 
-        self.lazy_load_solvers()
+        try:
 
-        # set the root pose of the lula solver, to ensure correct inverse kinematics
-        robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
-        robot_base_translation = robot_base_translation.cpu().detach().numpy()
-        robot_base_orientation = robot_base_orientation.cpu().detach().numpy()
-        self.lula_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
+            self.lazy_load_solvers()
 
-        combined_arm_action = action[0][self.solver_to_action_mapping] # index into the env dimension
+            # set the root pose of the lula solver, to ensure correct inverse kinematics
+            robot_base_translation, robot_base_orientation = self.robot.get_world_pose()
+            robot_base_translation = robot_base_translation.cpu().detach().numpy()
+            robot_base_orientation = robot_base_orientation.cpu().detach().numpy()
+            self.lula_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
 
-        left_pos, left_rot_mat = self.lula_solver.compute_forward_kinematics("left_hand_palm_link", combined_arm_action)
-        right_pos, right_rot_mat = self.lula_solver.compute_forward_kinematics("right_hand_palm_link", combined_arm_action)
+            combined_arm_action = action[0][self.solver_to_action_mapping] # index into the env dimension
 
-        left_pos = torch.from_numpy(left_pos)
-        right_pos = torch.from_numpy(right_pos)
-        left_rot_mat = torch.from_numpy(left_rot_mat)
-        right_rot_mat = torch.from_numpy(right_rot_mat)
+            left_pos, left_rot_mat = self.lula_solver.compute_forward_kinematics("left_hand_palm_link", combined_arm_action)
+            right_pos, right_rot_mat = self.lula_solver.compute_forward_kinematics("right_hand_palm_link", combined_arm_action)
 
-        left_target_eef_pose = PoseUtils.make_pose(left_pos, left_rot_mat)
-        right_target_eef_pose = PoseUtils.make_pose(right_pos, right_rot_mat)
+            left_pos = torch.from_numpy(left_pos)
+            right_pos = torch.from_numpy(right_pos)
+            left_rot_mat = torch.from_numpy(left_rot_mat)
+            right_rot_mat = torch.from_numpy(right_rot_mat)
 
-        return {"left": left_target_eef_pose, "right": right_target_eef_pose}
+            left_target_eef_pose = PoseUtils.make_pose(left_pos, left_rot_mat)
+            right_target_eef_pose = PoseUtils.make_pose(right_pos, right_rot_mat)
+
+            return {"left": left_target_eef_pose, "right": right_target_eef_pose}
+        
+        except Exception as e:
+            self.robot = None
+            return self.action_to_target_eef_pose(action)
 
     def actions_to_gripper_actions(self, actions: torch.Tensor) -> dict[str, torch.Tensor]:
         """
@@ -221,9 +239,15 @@ class PickPlaceG129DEX3JointMimicEnv(ManagerBasedRLMimicEnv):
             A dictionary of torch.Tensor gripper actions. Key to each dict is an eef_name.
         """
 
-        self.lazy_load_solvers()
+        try:
 
-        return {
-            "left": actions[:,:,self.left_hand_indices],
-            "right": actions[:,:,self.right_hand_indices]
-        }
+            self.lazy_load_solvers()
+
+            return {
+                "left": actions[:,:,self.left_hand_indices],
+                "right": actions[:,:,self.right_hand_indices]
+            }
+
+        except Exception as e:
+            self.robot = None
+            return self.actions_to_gripper_actions(actions)
