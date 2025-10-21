@@ -524,7 +524,6 @@ def main():
                             raise e
                         try:
                             print(f"initial state: {sim_state}")
-                            input()
                             env.reset_to(sim_state, torch.tensor([0], device=env.device), is_relative=True)
                             env.sim.reset()
                             time.sleep(1)
