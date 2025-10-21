@@ -383,7 +383,9 @@ def replay_episode(
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
         env.step(torch.Tensor(action_tensor))
     if success_term is not None:
-        if not bool(success_term.func(env, **success_term.params)[0]):
+        success_term_value = success_term.func(env, **success_term.params)
+        print(f"success term value: {success_term_value}")
+        if not bool(success_term_value[0]):
             return False
     return True
 
