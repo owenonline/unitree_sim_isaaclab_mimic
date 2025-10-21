@@ -366,9 +366,13 @@ def replay_episode(
     # read initial state and actions from the loaded episode
     initial_state = episode.data["initial_state"]
     actions = episode.data["actions"]
-    env.sim.reset()
+
+    print(f"initial state: {initial_state}")
+
     env.recorder_manager.reset()
-    env.reset_to(initial_state, None, is_relative=False)
+    env.reset_to(initial_state, None, is_relative=True)
+    env.sim.reset()
+    
     first_action = True
     for action_index, action in enumerate(actions):
         current_action_index = action_index
