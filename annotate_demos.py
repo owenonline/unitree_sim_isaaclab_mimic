@@ -89,21 +89,25 @@ skip_episode = False
 
 def play_cb():
     global is_paused
+    print("N key received")
     is_paused = False
 
 
 def pause_cb():
     global is_paused
+    print("B key received")
     is_paused = True
 
 
 def skip_episode_cb():
     global skip_episode
+    print("Q key received")
     skip_episode = True
 
 
 def mark_subtask_cb():
     global current_action_index, marked_subtask_action_indices
+    print("S key received")
     marked_subtask_action_indices.append(current_action_index)
     print(f"Marked a subtask signal at action index: {current_action_index}")
 
@@ -289,6 +293,7 @@ def main():
     if not args_cli.auto:
         keyboard_interface.add_callback("S", mark_subtask_cb)
     keyboard_interface.reset()
+    print("Keyboard interface reset")
 
     # simulate environment -- run everything in inference mode
     exported_episode_count = 0
