@@ -367,7 +367,7 @@ def replay_episode(
     initial_state = episode.data["initial_state"]
     actions = episode.data["actions"]
 
-    print(f"initial state: {initial_state}")
+    print(f"initial state: {initial_state['rigid_object']}")
 
     env.recorder_manager.reset()
     env.reset_to(initial_state, None, is_relative=True)
