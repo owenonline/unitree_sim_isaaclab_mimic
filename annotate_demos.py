@@ -369,7 +369,28 @@ def replay_episode(
     global current_action_index, skip_episode, is_paused
     # read initial state and actions from the loaded episode
     initial_state = episode.data["initial_state"]
+    raw_states = episode.data["states"]
     actions = episode.data["actions"]
+
+    states_list = [
+        {
+            "articulation": {
+                "robot": {
+                    "joint_position": raw_states["articulation"]["robot"]["joint_position"][i,:],
+                    "joint_velocity": raw_states["articulation"]["robot"]["joint_velocity"][i,:],
+                    "root_pose": raw_states["articulation"]["robot"]["root_pose"][i,:],
+                    "root_velocity": raw_states["articulation"]["robot"]["root_velocity"][i,:],
+                }
+            },
+            "rigid_object": {
+                "object": {
+                    "root_pose": raw_states["rigid_object"]["object"]["root_pose"][i,:],
+                    "root_velocity": raw_states["rigid_object"]["object"]["root_velocity"][i,:],
+                }
+            }
+        }
+        for i in range(raw_states["articulation"]["robot"]["joint_position"].shape[0])
+    ]
 
     print(f"initial state: {initial_state['rigid_object']}")
 
@@ -390,7 +411,9 @@ def replay_episode(
                     return False
                 continue
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
-        env.step(torch.Tensor(action_tensor))
+        # env.step(torch.Tensor(action_tensor))
+        env.reset_to(states_list[action_index], None, is_relative=True)
+        env.sim.render()
     if success_term is not None:
         success_term_value = success_term.func(env, **success_term.params)
         print(f"success term value: {success_term_value}")
