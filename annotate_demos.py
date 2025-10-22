@@ -9,6 +9,7 @@ Script to add mimic annotations to demos to be used as source demos for mimic da
 
 import argparse
 import math
+import time
 
 from isaaclab.app import AppLauncher
 
@@ -40,6 +41,7 @@ parser.add_argument(
     default=False,
     help="Enable annotating start points of subtasks.",
 )
+parser.add_argument("--seed", type=int, default=42, help="environment seed")
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -228,9 +230,11 @@ def main():
 
     env_cfg.recorders.dataset_export_dir_path = output_dir
     env_cfg.recorders.dataset_filename = output_file_name
+    env_cfg.seed = args_cli.seed
 
-    # create environment from loaded config
+    # create environment from loaded config (set the seed to be able to replicate collected data)
     env: ManagerBasedRLMimicEnv = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+    env.seed(args_cli.seed)
 
     print("total_action_dim:", env.action_manager.total_action_dim)
     for name, term in env.action_manager._terms.items():
@@ -372,6 +376,7 @@ def replay_episode(
     env.recorder_manager.reset()
     env.reset_to(initial_state, None, is_relative=True)
     env.sim.reset()
+    time.sleep(1) # follows on from sim_main.py
     
     first_action = True
     for action_index, action in enumerate(actions):

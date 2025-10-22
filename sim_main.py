@@ -517,8 +517,8 @@ def main():
                         print(f"data_idx: {data_idx}")
                         try:
                             sim_state,task_name = action_provider.load_data(data_json_list[data_idx])
-                            # if task_name!=args_cli.task:
-                            #     raise ValueError(f" The {task_name} in the dataset is different from the {args_cli.task} being executed .")
+                            if task_name!=args_cli.task:
+                                raise ValueError(f" The {task_name} in the dataset is different from the {args_cli.task} being executed .")
                         except Exception as e:
                             print(f"Failed to load data: {e}")
                             raise e
