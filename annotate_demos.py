@@ -413,8 +413,8 @@ def replay_episode(
                 continue
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
         env.step(torch.Tensor(action_tensor))
-        # env.reset_to(states_list[action_index], None, is_relative=True)
-        # env.sim.render()
+        env.reset_to(states_list[action_index], None, is_relative=True)
+        env.sim.render()
     if success_term is not None:
         success_term_value = success_term.func(env, **success_term.params)
         print(f"success term value: {success_term_value}")
