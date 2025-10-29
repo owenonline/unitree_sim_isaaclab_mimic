@@ -424,8 +424,8 @@ def replay_episode(
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
         env.step(torch.Tensor(action_tensor))
         joint_positions.append(env.scene["robot"].data.joint_pos[0].clone().detach().cpu())
-        # env.reset_to(states_list[action_index], None, is_relative=True)
-        # env.sim.render()
+        env.reset_to(states_list[action_index], None, is_relative=True)
+        env.sim.render()
     positions = torch.stack(joint_positions)
     torch.save(positions, f"/workspace/joint_positions_{episode_name}.pt")
     if success_term is not None:
