@@ -313,7 +313,7 @@ def main():
 
                 is_episode_annotated_successfully = False
                 if args_cli.auto:
-                    is_episode_annotated_successfully = annotate_episode_in_auto_mode(env, episode, success_term)
+                    is_episode_annotated_successfully = annotate_episode_in_auto_mode(env, episode, success_term, episode_name)
                 else:
                     is_episode_annotated_successfully = annotate_episode_in_manual_mode(
                         env, episode, success_term, subtask_term_signal_names, subtask_start_signal_names
@@ -351,6 +351,7 @@ def replay_episode(
     env: ManagerBasedRLMimicEnv,
     episode: EpisodeData,
     success_term: TerminationTermCfg | None = None,
+    episode_name: str="",
 ) -> bool:
     """Replays an episode in the environment.
 
@@ -420,9 +421,8 @@ def replay_episode(
         joint_positions.append(env.scene["robot"].data.joint_pos[0])
         # env.reset_to(states_list[action_index], None, is_relative=True)
         # env.sim.render()
-    import json
-    with open("/workspace/joint_positions.json", "w") as f:
-        json.dump(joint_positions, f)
+    positions = torch.stack(joint_positions)
+    torch.save(positions, f"/workspace/joint_positions_{episode_name}.pt")
     if success_term is not None:
         success_term_value = success_term.func(env, **success_term.params)
         print(f"success term value: {success_term_value}")
@@ -435,6 +435,7 @@ def annotate_episode_in_auto_mode(
     env: ManagerBasedRLMimicEnv,
     episode: EpisodeData,
     success_term: TerminationTermCfg | None = None,
+    episode_name: str="",
 ) -> bool:
     """Annotates an episode in automatic mode.
 
@@ -452,7 +453,7 @@ def annotate_episode_in_auto_mode(
     """
     global skip_episode
     skip_episode = False
-    is_episode_annotated_successfully = replay_episode(env, episode, success_term)
+    is_episode_annotated_successfully = replay_episode(env, episode, success_term, episode_name)
     if skip_episode:
         print("\tSkipping the episode.")
         return False
