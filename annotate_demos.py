@@ -9,6 +9,7 @@ Script to add mimic annotations to demos to be used as source demos for mimic da
 
 import argparse
 import math
+from pprint import pprint
 import time
 
 from isaaclab.app import AppLauncher
@@ -392,6 +393,11 @@ def replay_episode(
         }
         for i in range(raw_states["articulation"]["robot"]["joint_position"].shape[0])
     ]
+
+    print("beginning, middle, and last states")
+    pprint(states_list[0])
+    pprint(states_list[len(states_list)//2])
+    pprint(states_list[-1])
 
     print(f"initial state: {initial_state['rigid_object']}")
 
