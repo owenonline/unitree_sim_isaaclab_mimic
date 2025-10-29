@@ -116,6 +116,7 @@ def main():
     torch.manual_seed(env.cfg.datagen_config.seed)
 
     # reset before starting
+    print("num envs:", env.num_envs)
     env.reset()
 
     # Setup and run async data generation
