@@ -400,13 +400,11 @@ def replay_episode(
     env.sim.render()
     time.sleep(1) # follows on from sim_main.py
 
-    import inspect
-    print(inspect.getmembers(env.scene["robot"]))
-    print(env.scene["robot"].get_joint_position())
-    print(env.scene["robot"].get_joint_position().shape)
+    print(env.scene["robot"].data.joint_pos)
+    print(env.scene["robot"].data.joint_pos.shape)
 
     joint_positions = [
-        env.scene["robot"].get_joint_positions()[0]
+        env.scene["robot"].data.joint_pos[0]
     ]
     
     first_action = True
