@@ -364,6 +364,13 @@ def main():
         )
     env.sim.reset()
     env.reset()
+
+    print("parameters of the physics:")
+    print(f"dt: {env.sim.dt}")
+    print(f"substeps: {env.sim.physx.substeps}")
+    print(f"render_interval: {env.sim.render_interval}")
+    print(f"decimation: {getattr(env_cfg, 'decimation', None)}")
+    print(f"episode_length_s: {getattr(env_cfg, 'episode_length_s', None)}")
     
     # create simplified control configuration
     try:    
