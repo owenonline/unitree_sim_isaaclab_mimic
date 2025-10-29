@@ -394,10 +394,9 @@ def replay_episode(
         for i in range(raw_states["articulation"]["robot"]["joint_position"].shape[0])
     ]
 
-    print("beginning, middle, and last states")
-    pprint(states_list[0])
-    pprint(states_list[len(states_list)//2])
-    pprint(states_list[-1])
+    print("length of actions and states")
+    print(actions.shape)
+    print(len(states_list))
 
     print(f"initial state: {initial_state['rigid_object']}")
 
