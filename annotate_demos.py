@@ -406,9 +406,9 @@ def replay_episode(
     env.sim.render()
     time.sleep(1) # follows on from sim_main.py
 
-    joint_positions = [
-        env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
-    ]
+    # joint_positions = [
+    #     env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
+    # ]
     
     first_action = True
     for action_index, action in enumerate(actions):
@@ -422,12 +422,13 @@ def replay_episode(
                     return False
                 continue
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
-        env.step(torch.Tensor(action_tensor))
-        joint_positions.append(env.scene["robot"].data.joint_pos[0].clone().detach().cpu())
-        env.reset_to(states_list[action_index], None, is_relative=True)
-        env.sim.render()
-    positions = torch.stack(joint_positions)
-    torch.save(positions, f"/workspace/joint_positions_{episode_name}.pt")
+        for _ in range(4):
+            env.step(torch.Tensor(action_tensor))
+        # joint_positions.append(env.scene["robot"].data.joint_pos[0].clone().detach().cpu())
+        # env.reset_to(states_list[action_index], None, is_relative=True)
+        # env.sim.render()
+    # positions = torch.stack(joint_positions)
+    # torch.save(positions, f"/workspace/joint_positions_{episode_name}.pt")
     if success_term is not None:
         success_term_value = success_term.func(env, **success_term.params)
         print(f"success term value: {success_term_value}")
