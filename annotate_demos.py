@@ -422,8 +422,8 @@ def replay_episode(
                     return False
                 continue
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
-        # for _ in range(4):
-        env.step(torch.Tensor(action_tensor))
+        for _ in range(4):
+            env.step(torch.Tensor(action_tensor))
         # joint_positions.append(env.scene["robot"].data.joint_pos[0].clone().detach().cpu())
         # env.reset_to(states_list[action_index], None, is_relative=True)
         # env.sim.render()
