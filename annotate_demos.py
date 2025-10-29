@@ -400,6 +400,9 @@ def replay_episode(
     env.sim.render()
     time.sleep(1) # follows on from sim_main.py
 
+    print(env.scene["robot"].get_joint_position())
+    print(env.scene["robot"].get_joint_position().shape)
+
     joint_positions = [
         env.scene["robot"].get_joint_positions()[0]
     ]
@@ -417,7 +420,7 @@ def replay_episode(
                 continue
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
         env.step(torch.Tensor(action_tensor))
-        joint_positions.append(env.scene["robot"].get_joint_positions()[0])
+        joint_positions.append(env.scene["robot"].get_joint_position()[0])
         # env.reset_to(states_list[action_index], None, is_relative=True)
         # env.sim.render()
     import json
