@@ -376,16 +376,16 @@ def replay_episode(
         {
             "articulation": {
                 "robot": {
-                    "joint_position": raw_states["articulation"]["robot"]["joint_position"][i,:],
-                    "joint_velocity": raw_states["articulation"]["robot"]["joint_velocity"][i,:],
-                    "root_pose": raw_states["articulation"]["robot"]["root_pose"][i,:],
-                    "root_velocity": raw_states["articulation"]["robot"]["root_velocity"][i,:],
+                    "joint_position": raw_states["articulation"]["robot"]["joint_position"][i:i+1, :],
+                    "joint_velocity": raw_states["articulation"]["robot"]["joint_velocity"][i:i+1, :],
+                    "root_pose":      raw_states["articulation"]["robot"]["root_pose"][i:i+1, :],
+                    "root_velocity":  raw_states["articulation"]["robot"]["root_velocity"][i:i+1, :],
                 }
             },
             "rigid_object": {
                 "object": {
-                    "root_pose": raw_states["rigid_object"]["object"]["root_pose"][i,:],
-                    "root_velocity": raw_states["rigid_object"]["object"]["root_velocity"][i,:],
+                    "root_pose":     raw_states["rigid_object"]["object"]["root_pose"][i:i+1, :],
+                    "root_velocity": raw_states["rigid_object"]["object"]["root_velocity"][i:i+1, :],
                 }
             }
         }
