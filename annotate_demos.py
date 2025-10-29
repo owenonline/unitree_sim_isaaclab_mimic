@@ -399,6 +399,10 @@ def replay_episode(
     env.reset_to(initial_state, None, is_relative=True)
     env.sim.render()
     time.sleep(1) # follows on from sim_main.py
+
+    joint_positions = [
+        env.scene["robot"].get_joint_positions()[0]
+    ]
     
     first_action = True
     for action_index, action in enumerate(actions):
@@ -413,8 +417,12 @@ def replay_episode(
                 continue
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
         env.step(torch.Tensor(action_tensor))
-        env.reset_to(states_list[action_index], None, is_relative=True)
-        env.sim.render()
+        joint_positions.append(env.scene["robot"].get_joint_positions()[0])
+        # env.reset_to(states_list[action_index], None, is_relative=True)
+        # env.sim.render()
+    import json
+    with open("/workspace/joint_positions.json", "w") as f:
+        json.dump(joint_positions, f)
     if success_term is not None:
         success_term_value = success_term.func(env, **success_term.params)
         print(f"success term value: {success_term_value}")
