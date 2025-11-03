@@ -454,7 +454,7 @@ def replay_episode(
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
 
         pose_error = get_pose_error(states_list[action_index], env)
-        while pose_error > 0.02:
+        while pose_error > 0.1:
             env.step(torch.Tensor(action_tensor))
             pose_error = get_pose_error(states_list[action_index], env)
 
