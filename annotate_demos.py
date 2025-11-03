@@ -24,7 +24,10 @@ parser.add_argument(
     "--input_file", type=str, default="./datasets/dataset.hdf5", help="File name of the dataset to be annotated."
 )
 parser.add_argument("--robot_type", type=str, default="g129", help="robot type")
+parser.add_argument("--enable_dex1_dds", action="store_true", help="enable gripper DDS")
 parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexterous hand DDS")
+parser.add_argument("--enable_inspire_dds", action="store_true", help="enable inspire hand DDS")
+parser.add_argument("--enable_wholebody_dds", action="store_true", default=False, help="enable wh dds")
 parser.add_argument(
     "--output_file",
     type=str,
