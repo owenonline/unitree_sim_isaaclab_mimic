@@ -44,11 +44,15 @@ parser.add_argument(
 )
 parser.add_argument("--seed", type=int, default=42, help="environment seed")
 
+start_time = time.time()
+
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
 print(args_cli)
+
+arg_parse_time = time.time() - start_time
 
 if args_cli.enable_pinocchio:
     # Import pinocchio before AppLauncher to force the use of the version installed by IsaacLab and not the one installed by Isaac Sim
@@ -58,6 +62,8 @@ if args_cli.enable_pinocchio:
 # launch the simulator
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
+
+app_launcher_time = time.time() - arg_parse_time
 
 """Rest everything follows."""
 
@@ -83,6 +89,9 @@ from isaaclab.utils.datasets import EpisodeData, HDF5DatasetFileHandler
 
 import tasks  # noqa: F401
 from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
+
+
+isaaclab_import_time = time.time() - app_launcher_time
 
 is_paused = False
 current_action_index = 0
@@ -185,6 +194,8 @@ def main():
     dataset_file_handler = HDF5DatasetFileHandler()
     dataset_file_handler.open(args_cli.input_file)
 
+    dataset_file_handler_time = time.time() - isaaclab_import_time
+
     env_name = dataset_file_handler.get_env_name()
     episode_count = dataset_file_handler.get_num_episodes()
 
@@ -207,6 +218,8 @@ def main():
     env_cfg = parse_env_cfg(env_name, device=args_cli.device, num_envs=1)
 
     env_cfg.env_name = env_name
+
+    env_cfg_parse_time = time.time() - dataset_file_handler_time
 
     # extract success checking function to invoke manually
     success_term = None
@@ -233,6 +246,8 @@ def main():
     env_cfg.recorders.dataset_filename = output_file_name
     env_cfg.seed = args_cli.seed
 
+    recorder_setup_time = time.time() - env_cfg_parse_time
+
     # create environment from loaded config (set the seed to be able to replicate collected data)
     env: ManagerBasedRLMimicEnv = gym.make(args_cli.task, cfg=env_cfg).unwrapped
     env.seed(args_cli.seed)
@@ -240,6 +255,8 @@ def main():
     print("total_action_dim:", env.action_manager.total_action_dim)
     for name, term in env.action_manager._terms.items():
         print(name, term.action_dim)
+
+    env_create_time = time.time() - recorder_setup_time
 
     if not isinstance(env, ManagerBasedRLMimicEnv):
         raise ValueError("The environment should be derived from ManagerBasedRLMimicEnv")
@@ -284,10 +301,16 @@ def main():
             # no need to annotate the last subtask term signal, so remove it from the list
             subtask_term_signal_names[eef_name].pop()
 
+    subtask_signal_names_time = time.time() - env_create_time
+
     # reset environment
     env.reset()
 
     print(f"cli args: {args_cli}")
+
+    env_reset_time = time.time() - subtask_signal_names_time
+
+    print(f"=======SIMULATOR LOADING TIMES=======\narg parsing: {arg_parse_time}s\napp launch: {app_launcher_time}s\nisaaclab import: {isaaclab_import_time}s\ndataset loading: {dataset_file_handler_time}s\nenv cfg parse: {env_cfg_parse_time}s\nrecorder setup: {recorder_setup_time}s\nenv create: {env_create_time}s\nsubtask signal names: {subtask_signal_names_time}s\nenv reset: {env_reset_time}s")
 
     # Only enables inputs if this script is NOT headless mode
     # if not args_cli.headless and not os.environ.get("HEADLESS", 0):
