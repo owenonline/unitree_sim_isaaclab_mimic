@@ -15,7 +15,7 @@ import time
 from isaaclab.app import AppLauncher
 
 # Launching Isaac Sim Simulator first.
-
+from dds.dds_create import create_dds_objects
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Annotate demonstrations for Isaac Lab environments.")
@@ -23,6 +23,8 @@ parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument(
     "--input_file", type=str, default="./datasets/dataset.hdf5", help="File name of the dataset to be annotated."
 )
+parser.add_argument("--robot_type", type=str, default="g129", help="robot type")
+parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexterous hand DDS")
 parser.add_argument(
     "--output_file",
     type=str,
@@ -303,6 +305,9 @@ def main():
 
     subtask_signal_names_time = time.time()
 
+    # add dds objects to eliminate error messages and speed up simulation
+    create_dds_objects(args_cli,env)
+
     # reset environment
     env.reset()
 
@@ -373,7 +378,7 @@ def main():
 def get_pose_error(state, env):
     current_robot_pos = env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
     correct_robot_pos = state["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
-    return torch.abs(current_robot_pos - correct_robot_pos)
+    return torch.max(torch.abs(current_robot_pos - correct_robot_pos))
 
 def replay_episode(
     env: ManagerBasedRLMimicEnv,
@@ -451,10 +456,16 @@ def replay_episode(
                 if skip_episode:
                     return False
                 continue
+
+        print(f"taking new action")
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
+        env.step(action_tensor)
         pose_error = get_pose_error(states_list[action_index], env)
-        print(f"pose error: {pose_error}")
-        env.step(torch.Tensor(action_tensor))
+        print(f"\tpose error: {pose_error}")
+        while pose_error > 0.1:
+            print(f"\tpose error: {pose_error}")
+            pose_error = get_pose_error(states_list[action_index], env)
+            env.step(action_tensor)
 
         # env.step(torch.Tensor(action_tensor)
 
