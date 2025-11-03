@@ -371,7 +371,7 @@ def main():
     return successful_task_count
 
 def get_pose_error(state, env):
-    current_robot_pos = env.scene["robot"].data.root_pose[0].clone().detach().cpu()
+    current_robot_pos = env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
     correct_robot_pos = state["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
     return torch.max(torch.abs(current_robot_pos - correct_robot_pos))
 
@@ -437,7 +437,7 @@ def replay_episode(
     #     env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
     # ]
 
-    current_robot_pos = env.scene["robot"].data.root_pose[0].clone().detach().cpu()
+    current_robot_pos = env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
     correct_robot_pos = states_list[0]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
     print(f"current_robot_pos (starting pose): {current_robot_pos}")
     print(f"correct_robot_pos (starting pose): {correct_robot_pos}")
