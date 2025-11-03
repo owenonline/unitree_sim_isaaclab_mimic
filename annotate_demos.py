@@ -472,12 +472,13 @@ def replay_episode(
             action_count = 0
             while pose_error > 0.05:
 
-                if action_count > 10 or pose_error > 0.15:
+                if action_count > 20 or pose_error > 0.15:
                     print(f"\tFailed to converge, force setting correct pose.")
-                    env.scene['robot'].set_joint_positions(action_tensor)
+                    env.scene['robot'].write_joint_position_to_sim(action_tensor)
+                    # TODO: force set cylinder pose as well
                 else:
                     env.step(action_tensor)
-                    
+
                 pose_error = get_pose_error(states_list[action_index], env)
                 print(f"\tpose error: {pose_error}")
                 action_count += 1
