@@ -373,7 +373,7 @@ def main():
 def get_pose_error(state, env):
     current_robot_pos = env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
     correct_robot_pos = state["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
-    return torch.max(torch.abs(current_robot_pos - correct_robot_pos))
+    return torch.abs(current_robot_pos - correct_robot_pos)
 
 def replay_episode(
     env: ManagerBasedRLMimicEnv,
@@ -452,11 +452,9 @@ def replay_episode(
                     return False
                 continue
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
-
         pose_error = get_pose_error(states_list[action_index], env)
-        while pose_error > 0.1:
-            env.step(torch.Tensor(action_tensor))
-            pose_error = get_pose_error(states_list[action_index], env)
+        print(f"pose error: {pose_error}")
+        env.step(torch.Tensor(action_tensor))
 
         # env.step(torch.Tensor(action_tensor)
 
