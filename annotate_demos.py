@@ -427,11 +427,9 @@ def replay_episode(
 
     print(f"initial state: {initial_state['rigid_object']}")
 
-    env.recorder_manager.reset()
     env.sim.reset()
+    env.recorder_manager.reset()
     env.reset_to(initial_state, None, is_relative=True)
-    env.sim.render()
-    time.sleep(1) # follows on from sim_main.py
 
     # joint_positions = [
     #     env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
