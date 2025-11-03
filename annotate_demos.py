@@ -370,6 +370,10 @@ def main():
 
     return successful_task_count
 
+def get_pose_error(state, env):
+    current_robot_pos = env.scene["robot"].data.root_pose[0].clone().detach().cpu()
+    correct_robot_pos = state["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
+    return torch.max(torch.abs(current_robot_pos - correct_robot_pos))
 
 def replay_episode(
     env: ManagerBasedRLMimicEnv,
@@ -432,6 +436,11 @@ def replay_episode(
     # joint_positions = [
     #     env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
     # ]
+
+    current_robot_pos = env.scene["robot"].data.root_pose[0].clone().detach().cpu()
+    correct_robot_pos = states_list[0]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
+    print(f"current_robot_pos (starting pose): {current_robot_pos}")
+    print(f"correct_robot_pos (starting pose): {correct_robot_pos}")
     
     first_action = True
     for action_index, action in enumerate(actions):
@@ -445,8 +454,14 @@ def replay_episode(
                     return False
                 continue
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
-        for _ in range(4):
+
+        pose_error = get_pose_error(states_list[action_index], env)
+        while pose_error > 0.02:
             env.step(torch.Tensor(action_tensor))
+            pose_error = get_pose_error(states_list[action_index], env)
+
+        # env.step(torch.Tensor(action_tensor)
+
         # joint_positions.append(env.scene["robot"].data.joint_pos[0].clone().detach().cpu())
         # env.reset_to(states_list[action_index], None, is_relative=True)
         # env.sim.render()
