@@ -466,7 +466,9 @@ def replay_episode(
         pose_error = get_pose_error(states_list[action_index], env)
         print(f"\tpose error: {pose_error}")
         if pose_error > 0.1:
-            print(f"\tpose error is too high. See action, GT, current state below:\n\t\t{action}\n\t\t{states_list[action_index]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()}\n\t\t{env.scene["robot"].data.joint_pos[0].clone().detach().cpu()}")
+            current_gt = states_list[action_index]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
+            current_state = env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
+            print(f"\tpose error is too high. See action, GT, current state below:\n\t\t{action}\n\t\t{current_gt}\n\t\t{current_state}")
         while pose_error > 0.1:
             print(f"\tpose error: {pose_error}")
             pose_error = get_pose_error(states_list[action_index], env)
