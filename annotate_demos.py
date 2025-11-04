@@ -439,10 +439,6 @@ def replay_episode(
     env.recorder_manager.reset()
     env.reset_to(initial_state, None, is_relative=True)
 
-    # joint_positions = [
-    #     env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
-    # ]
-
     current_robot_pos = env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
     correct_robot_pos = states_list[0]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
     print(f"current_robot_pos (starting pose): {current_robot_pos}")
@@ -462,7 +458,7 @@ def replay_episode(
 
         print(f"taking new action")
 
-        # Code version 5: use the action initially to ensure it gets recorded, then make up for PID differences by resetting positions to their correct valyes
+        # Use the action initially to ensure it gets recorded, then make up for PID differences by resetting positions to their correct valyes
         action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
         env.step(action_tensor)
         pose_error = get_pose_error(states_list[action_index], env)
@@ -471,69 +467,6 @@ def replay_episode(
             env.scene['robot'].write_joint_position_to_sim(states_list[action_index]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu().reshape([1, action.shape[0]]))
             env.scene['object'].write_root_pose_to_sim(states_list[action_index]["rigid_object"]["object"]["root_pose"][0].clone().detach().cpu())
 
-        # Code version 4: use the action initially then use the ground truth to clean it up if necessary
-        # action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
-        # env.step(action_tensor)
-        # pose_error = get_pose_error(states_list[action_index], env)
-        # print(f"\tpose error: {pose_error}")
-        # if pose_error > 0.1:
-        #     action_tensor = states_list[action_index]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu().reshape([1, action.shape[0]])
-        #     action_count = 0
-        #     while pose_error > 0.05:
-
-        #         if action_count > 20 or pose_error > 0.15:
-        #             print(f"\tFailed to converge, force setting correct pose.")
-        #             env.scene['robot'].write_joint_position_to_sim(action_tensor)
-        #             # TODO: force set cylinder pose as well
-        #         else:
-        #             env.step(action_tensor)
-
-        #         pose_error = get_pose_error(states_list[action_index], env)
-        #         print(f"\tpose error: {pose_error}")
-        #         action_count += 1
-
-        # # Code version 3: use the ground truth state as the action
-        # action_tensor = states_list[action_index]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu().reshape([1, action.shape[0]])
-        # env.step(action_tensor)
-        # pose_error = get_pose_error(states_list[action_index], env)
-        # print(f"\tpose error: {pose_error}")
-        # if pose_error > 0.1:
-        #     action_count = 0
-        #     while pose_error > 0.05:
-
-        #         if action_count > 20 or pose_error > 0.15:
-        #             print(f"\tFailed to converge, force setting correct scene pose.")
-        #             env.scene['robot'].write_joint_position_to_sim(action_tensor)
-        #             env.scene['object'].write_root_pose_to_sim(states_list[action_index]["rigid_object"]["object"]["root_pose"][0].clone().detach().cpu())
-        #         else:
-        #             env.step(action_tensor)
-
-        #         pose_error = get_pose_error(states_list[action_index], env)
-        #         print(f"\tpose error: {pose_error}")
-        #         action_count += 1
-
-        # Code version 2: use a loop to move the robot to the correct pose
-        # action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
-        # env.step(action_tensor)
-        # pose_error = get_pose_error(states_list[action_index], env)
-        # print(f"\tpose error: {pose_error}")
-        # if pose_error > 0.1:
-        #     current_gt = states_list[action_index]["articulation"]["robot"]["joint_position"][0].clone().detach().cpu()
-        #     current_state = env.scene["robot"].data.joint_pos[0].clone().detach().cpu()
-        #     print(f"\tpose error is too high. See action, GT, current state below:\n\t\t{action}\n\t\t{current_gt}\n\t\t{current_state}")
-        # while pose_error > 0.1:
-        #     print(f"\tpose error: {pose_error}")
-        #     pose_error = get_pose_error(states_list[action_index], env)
-        #     env.step(action_tensor)
-
-        # Code version 1: take the action and hope for the best
-        # env.step(torch.Tensor(action_tensor)
-
-        # joint_positions.append(env.scene["robot"].data.joint_pos[0].clone().detach().cpu())
-        # env.reset_to(states_list[action_index], None, is_relative=True)
-        # env.sim.render()
-    # positions = torch.stack(joint_positions)
-    # torch.save(positions, f"/workspace/joint_positions_{episode_name}.pt")
     if success_term is not None:
         success_term_value = success_term.func(env, **success_term.params)
         print(f"success term value: {success_term_value}")
