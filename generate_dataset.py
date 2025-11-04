@@ -19,6 +19,11 @@ from dds.dds_create import create_dds_objects
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Generate demonstrations for Isaac Lab environments.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
+parser.add_argument("--robot_type", type=str, default="g129", help="robot type")
+parser.add_argument("--enable_dex1_dds", action="store_true", help="enable gripper DDS")
+parser.add_argument("--enable_dex3_dds", action="store_true", help="enable dexterous hand DDS")
+parser.add_argument("--enable_inspire_dds", action="store_true", help="enable inspire hand DDS")
+parser.add_argument("--enable_wholebody_dds", action="store_true", default=False, help="enable wh dds")
 parser.add_argument("--generation_num_trials", type=int, help="Number of demos to be generated.", default=None)
 parser.add_argument(
     "--num_envs", type=int, default=1, help="Number of environments to instantiate for generating datasets."
