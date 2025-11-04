@@ -489,19 +489,22 @@ def replay_episode(
         pose_error = get_pose_error(states_list[action_index], env)
         print(f"\tpose error: {pose_error}")
         if pose_error > 0.1:
-            action_count = 0
-            while pose_error > 0.05:
+            print(f"Correcting joint position")
+            env.scene['robot'].write_joint_position_to_sim(action_tensor)
+            env.scene['object'].write_root_pose_to_sim(states_list[action_index]["rigid_object"]["object"]["root_pose"][0].clone().detach().cpu())
+            # action_count = 0
+            # while pose_error > 0.05:
 
-                if action_count > 20 or pose_error > 0.15:
-                    print(f"\tFailed to converge, force setting correct scene pose.")
-                    env.scene['robot'].write_joint_position_to_sim(action_tensor)
-                    env.scene['object'].write_root_pose_to_sim(states_list[action_index]["rigid_object"]["object"]["root_pose"][0].clone().detach().cpu())
-                else:
-                    env.step(action_tensor)
-                    
-                pose_error = get_pose_error(states_list[action_index], env)
-                print(f"\tpose error: {pose_error}")
-                action_count += 1
+            #     if action_count > 20 or pose_error > 0.15:
+            #         print(f"\tFailed to converge, force setting correct scene pose.")
+            #         env.scene['robot'].write_joint_position_to_sim(action_tensor)
+            #         env.scene['object'].write_root_pose_to_sim(states_list[action_index]["rigid_object"]["object"]["root_pose"][0].clone().detach().cpu())
+            #     else:
+            #         env.step(action_tensor)
+
+            pose_error = get_pose_error(states_list[action_index], env)
+            print(f"\tpose error: {pose_error}")
+            #     action_count += 1
 
         # Code version 2: use a loop to move the robot to the correct pose
         # action_tensor = torch.Tensor(action).reshape([1, action.shape[0]])
