@@ -14,6 +14,8 @@ import argparse
 
 from isaaclab.app import AppLauncher
 
+from dds.dds_create import create_dds_objects
+
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Generate demonstrations for Isaac Lab environments.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
@@ -114,6 +116,9 @@ def main():
     random.seed(env.cfg.datagen_config.seed)
     np.random.seed(env.cfg.datagen_config.seed)
     torch.manual_seed(env.cfg.datagen_config.seed)
+
+    # create dds objects
+    create_dds_objects(args_cli,env)
 
     # reset before starting
     print("num envs:", env.num_envs)
