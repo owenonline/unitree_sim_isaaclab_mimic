@@ -101,6 +101,8 @@ from layeredcontrol.robot_control_system import (
 
 from dds.reset_pose_dds import *
 import tasks
+import typing_extensions
+sys.modules['pip._vendor.typing_extensions'] = typing_extensions
 from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
 
 from tools.augmentation_utils import (
