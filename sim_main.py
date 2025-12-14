@@ -101,8 +101,7 @@ from layeredcontrol.robot_control_system import (
 
 from dds.reset_pose_dds import *
 import tasks
-# from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
-from tasks.utils.parse_cfg import parse_env_cfg
+from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
 
 from tools.augmentation_utils import (
     update_light,
