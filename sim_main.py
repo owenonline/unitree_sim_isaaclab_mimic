@@ -179,16 +179,6 @@ def main():
         env_cfg.seed = args_cli.seed
         env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
 
-        print("total_action_dim:", env.action_manager.total_action_dim)
-        for name, term in env.action_manager._terms.items():
-            print(name, term.action_dim)
-        term = env.action_manager._terms["joint_pos"]
-        dof_indices = getattr(term, "dof_indices", None) or getattr(term, "_dof_indices", None)
-        if dof_indices is not None:
-            print(f"dof_indices: {dof_indices}")
-        print(f"Observation terms: {env.observation_manager.active_terms}")
-        print(f"obs_buf keys: {env.obs_buf.keys()}")
-
         env.seed(args_cli.seed)
         try:
             sensors_dict = getattr(env.scene, "sensors", {})
@@ -364,13 +354,6 @@ def main():
         )
     env.sim.reset()
     env.reset()
-
-    print("parameters of the physics:")
-    print(f"dt: {env.sim.dt}")
-    print(f"substeps: {env.sim.physx.substeps}")
-    print(f"render_interval: {env.sim.render_interval}")
-    print(f"decimation: {getattr(env_cfg, 'decimation', None)}")
-    print(f"episode_length_s: {getattr(env_cfg, 'episode_length_s', None)}")
     
     # create simplified control configuration
     try:    
@@ -530,7 +513,6 @@ def main():
                             print(f"Failed to load data: {e}")
                             raise e
                         try:
-                            print(f"initial state: {sim_state}")
                             env.reset_to(sim_state, torch.tensor([0], device=env.device), is_relative=True)
                             env.sim.reset()
                             time.sleep(1)
@@ -612,6 +594,9 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
     finally:
         print("Performing final cleanup...")
         

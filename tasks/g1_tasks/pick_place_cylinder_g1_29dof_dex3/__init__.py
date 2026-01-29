@@ -5,7 +5,7 @@
 import gymnasium as gym
 import os
 
-from . import pickplace_cylinder_g1_29dof_dex3_joint_env_cfg, pickplace_cylinder_g1_29dof_dex3_joint_mimic_env_cfg, pickplace_cylinder_g1_29dof_dex3_joint_mimic_env
+from . import pickplace_cylinder_g1_29dof_dex3_joint_env_cfg, pickplace_cylinder_g1_29dof_dex3_joint_mimic_env_cfg
 
 
 gym.register(

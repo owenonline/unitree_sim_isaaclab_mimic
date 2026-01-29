@@ -38,7 +38,6 @@ def compute_reward(
     name = f"{hand_side}_hand_index_1_link"
     finger_idx = None
     finger_idx = body_names.index(name)
-    print(f"[Rewards] Found finger link: '{name}' at index {finger_idx}")
     
     if finger_idx is None:
         print(f"[Rewards] WARNING: Finger link not found in {body_names}. Reward will be 0.")
