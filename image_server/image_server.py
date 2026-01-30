@@ -64,7 +64,7 @@ class ImageServer:
         print("[Image Server] Starting send_process from shared memory...")
         
         try:
-            while True:
+            while self.running:#while True:
                 # read the concatenated images from shared memory
                 concatenated_image = self.multi_image_reader.read_concatenated_image()
                 

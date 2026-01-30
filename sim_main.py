@@ -4,6 +4,7 @@
 #!/usr/bin/env python3
 # main.py
 import os
+import psutil
 
 project_root = os.path.dirname(os.path.abspath(__file__))
 os.environ["PROJECT_ROOT"] = project_root
@@ -89,10 +90,24 @@ if args_cli.enable_dex3_dds and args_cli.enable_dex1_dds and args_cli.enable_ins
     print("Please select one of the options")
     sys.exit(1)
 
-
 import pinocchio 
+
+_MAIN_PID = os.getpid()
+_shutdown_requested = False
+def _request_shutdown(signum=None, frame=None):
+    """SIGINT/SIGTERM handler that is safe even if inherited by forked children."""
+    global _shutdown_requested
+    if os.getpid() != _MAIN_PID:
+        # Never run Isaac Sim / controller shutdown logic in forked children
+        # return
+        os._exit(128 + (signum or 0))
+    _shutdown_requested = True
+
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
+
+signal.signal(signal.SIGINT, _request_shutdown)
+signal.signal(signal.SIGTERM, _request_shutdown)
 
 from layeredcontrol.robot_control_system import (
     RobotController, 
@@ -117,6 +132,12 @@ from tools.get_reward import get_step_reward_value,get_current_rewards
 def setup_signal_handlers(controller,dds_manager=None):
     """set signal handlers"""
     def signal_handler(signum, frame):
+
+        _request_shutdown(signum, frame)
+
+        if os.getpid() != _MAIN_PID:
+            return
+
         print(f"\nreceived signal {signum}, stopping controller...")
         try:
             controller.stop()
@@ -131,7 +152,31 @@ def setup_signal_handlers(controller,dds_manager=None):
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+def _terminate_child_processes(timeout_s: float = 2.0):
+    """Terminate any subprocesses spawned by this python process (resource_tracker, logging_mp listener, etc.)."""
+    try:
+        proc = psutil.Process(os.getpid())
+        children = proc.children(recursive=True)
+        if not children:
+            return
 
+        for c in children:
+            try:
+                c.terminate()
+            except Exception:
+                pass
+
+        gone, alive = psutil.wait_procs(children, timeout=timeout_s)
+
+        for c in alive:
+            try:
+                c.kill()
+            except Exception:
+                pass
+
+        psutil.wait_procs(alive, timeout=timeout_s)
+    except Exception as e:
+        print(f"[shutdown] child process cleanup failed: {e}")
 
 def main():
     """main function"""
@@ -140,25 +185,12 @@ def main():
     # import io
     # profiler = cProfile.Profile()
     # profiler.enable()
-    import os
-    import atexit
-    try:
-        os.setpgrp()
-        current_pgid = os.getpgrp()
-        print(f"Setting process group: {current_pgid}")
-        
-        def cleanup_process_group():
-            try:
-                print(f"Cleaning up process group: {current_pgid}")
-                import signal
-                os.killpg(current_pgid, signal.SIGTERM)
-            except Exception as e:
-                print(f"Failed to clean up process group: {e}")
-        
-        atexit.register(cleanup_process_group)
-        
-    except Exception as e:
-        print(f"Failed to set process group: {e}")
+
+    server = None
+    dds_manager = None
+    reset_pose_dds = None
+    sim_state_dds = None
+
     print("=" * 60)
     print("robot control system started")
     print(f"Task: {args_cli.task}")
@@ -452,8 +484,8 @@ def main():
         reward_interval = max(1, args_cli.reward_interval)
 
         # use torch.inference_mode() and exception suppression
-        with contextlib.suppress(KeyboardInterrupt), torch.inference_mode():
-            while simulation_app.is_running() and controller.is_running:
+        with torch.inference_mode(): #contextlib.suppress(KeyboardInterrupt), 
+            while simulation_app.is_running() and controller.is_running and not _shutdown_requested:
                 current_time = time.time()
                 loop_count += 1
                 if not args_cli.replay_data:
@@ -572,6 +604,7 @@ def main():
                     break
                 # rate_limiter.sleep(env)
     except KeyboardInterrupt:
+        _request_shutdown()
         print("\nuser interrupted program")
     
     except Exception as e:
@@ -580,10 +613,44 @@ def main():
     finally:
         # clean up resources
         print("\nclean up resources...")
-        controller.cleanup()
-        
-        env.close()
+        try:
+            if dds_manager is not None:
+                dds_manager.stop_all_communication()
+        except Exception as e:
+            print(f"Failed to stop DDS: {e}")
+
+        try:
+            if server is not None:
+                server._close()  # best available API in ImageServer
+        except Exception as e:
+            print(f"Failed to stop image server: {e}")
+
+        try:
+            controller.stop()
+        except Exception:
+            pass
+
+        try:
+            controller.cleanup()
+        except Exception as e:
+            print(f"controller.cleanup failed: {e}")
+
+        try:
+            env.close()
+        except Exception as e:
+            print(f"env.close failed: {e}")
+
+        try:
+            simulation_app.close()
+        except Exception as e:
+            print(f"simulation_app.close failed: {e}")
+
+        _terminate_child_processes(timeout_s=3.0)
+
         print("cleanup completed")
+
+        if _shutdown_requested:
+            os._exit(0)
     # profiler.disable()
     # s = io.StringIO()
     # ps = pstats.Stats(profiler, stream=s).strip_dirs().sort_stats("time")
@@ -597,64 +664,64 @@ if __name__ == "__main__":
     except Exception as e:
         import traceback
         traceback.print_exc()
-    finally:
-        print("Performing final cleanup...")
+    # finally:
+    #     print("Performing final cleanup...")
         
-        # Get current process information
-        import os
-        import subprocess
-        import signal
-        import time
+    #     # Get current process information
+    #     import os
+    #     import subprocess
+    #     import signal
+    #     import time
         
-        current_pid = os.getpid()
-        print(f"Current main process PID: {current_pid}")
+    #     current_pid = os.getpid()
+    #     print(f"Current main process PID: {current_pid}")
         
-        try:
-            # Find all related Python processes
-            result = subprocess.run(['pgrep', '-f', 'sim_main.py'], 
-                                  capture_output=True, text=True)
-            if result.returncode == 0:
-                pids = result.stdout.strip().split('\n')
-                print(f"Found related processes: {pids}")
+    #     try:
+    #         # Find all related Python processes
+    #         result = subprocess.run(['pgrep', '-f', 'sim_main.py'], 
+    #                               capture_output=True, text=True)
+    #         if result.returncode == 0:
+    #             pids = result.stdout.strip().split('\n')
+    #             print(f"Found related processes: {pids}")
                 
-                for pid in pids:
-                    if pid and pid != str(current_pid):
-                        try:
-                            print(f"Terminating child process: {pid}")
-                            os.kill(int(pid), signal.SIGTERM)
-                        except ProcessLookupError:
-                            print(f"Process {pid} does not exist")
-                        except Exception as e:
-                            print(f"Failed to terminate process {pid}: {e}")
+    #             for pid in pids:
+    #                 if pid and pid != str(current_pid):
+    #                     try:
+    #                         print(f"Terminating child process: {pid}")
+    #                         os.kill(int(pid), signal.SIGTERM)
+    #                     except ProcessLookupError:
+    #                         print(f"Process {pid} does not exist")
+    #                     except Exception as e:
+    #                         print(f"Failed to terminate process {pid}: {e}")
                 
-                # Wait for processes to exit
-                time.sleep(2)
+    #             # Wait for processes to exit
+    #             time.sleep(2)
                 
-                # Check if there are any remaining processes, force kill them
-                result2 = subprocess.run(['pgrep', '-f', 'sim_main.py'], 
-                                       capture_output=True, text=True)
-                if result2.returncode == 0:
-                    remaining_pids = result2.stdout.strip().split('\n')
-                    for pid in remaining_pids:
-                        if pid and pid != str(current_pid):
-                            try:
-                                print(f"Force killing process: {pid}")
-                                os.kill(int(pid), signal.SIGKILL)
-                            except Exception as e:
-                                print(f"Failed to force kill process {pid}: {e}")
+    #             # Check if there are any remaining processes, force kill them
+    #             result2 = subprocess.run(['pgrep', '-f', 'sim_main.py'], 
+    #                                    capture_output=True, text=True)
+    #             if result2.returncode == 0:
+    #                 remaining_pids = result2.stdout.strip().split('\n')
+    #                 for pid in remaining_pids:
+    #                     if pid and pid != str(current_pid):
+    #                         try:
+    #                             print(f"Force killing process: {pid}")
+    #                             os.kill(int(pid), signal.SIGKILL)
+    #                         except Exception as e:
+    #                             print(f"Failed to force kill process {pid}: {e}")
                                 
-        except Exception as e:
-            print(f"Error during process cleanup: {e}")
+    #     except Exception as e:
+    #         print(f"Error during process cleanup: {e}")
         
-        try:
-            simulation_app.close()
-        except Exception as e:
-            print(f"Failed to close simulation application: {e}")
+    #     try:
+    #         simulation_app.close()
+    #     except Exception as e:
+    #         print(f"Failed to close simulation application: {e}")
             
-        print("Program exit completed")
+    #     print("Program exit completed")
         
-        # Force exit
-        os._exit(0)
+    #     # Force exit
+    #     os._exit(0)
 
 # python sim_main.py --device cpu  --enable_cameras  --task  Isaac-PickPlace-Cylinder-G129-Dex1-Joint   --enable_dex1_dds --robot_type g129
 # python sim_main.py --device cpu  --enable_cameras  --task Isaac-PickPlace-Cylinder-G129-Dex3-Joint    --enable_dex3_dds --robot_type g129
